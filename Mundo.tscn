@@ -1,0 +1,50 @@
+[gd_scene load_steps=7 format=3 uid="uid://be0db0gytedhy"]
+
+[ext_resource type="Script" uid="uid://jpmwdaoeoqsu" path="res://Mundo.gd" id="1_ubi47"]
+[ext_resource type="PackedScene" uid="uid://cb54db7iod375" path="res://ChatUI.tscn" id="2_xywc0"]
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_xwo6f"]
+
+[sub_resource type="Sky" id="Sky_6ba58"]
+sky_material = SubResource("ProceduralSkyMaterial_xwo6f")
+
+[sub_resource type="Environment" id="Environment_lgngo"]
+background_mode = 2
+sky = SubResource("Sky_6ba58")
+
+[sub_resource type="ViewportTexture" id="ViewportTexture_ubi47"]
+viewport_path = NodePath("SubViewport")
+
+[node name="Mundo" type="Node3D" node_paths=PackedStringArray("line_edit", "rich_text_label", "sub_viewport_node", "gemini_request")]
+script = ExtResource("1_ubi47")
+line_edit = NodePath("SubViewport/Control/VBoxContainer/LineEdit")
+rich_text_label = NodePath("SubViewport/Control/VBoxContainer/RichTextLabel")
+sub_viewport_node = NodePath("SubViewport")
+gemini_request = NodePath("GeminiRequest")
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.49440312)
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_lgngo")
+
+[node name="Sprite3D" type="Sprite3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.18413866, 0.027894258)
+pixel_size = 0.001
+transparent = false
+texture = SubResource("ViewportTexture_ubi47")
+
+[node name="SubViewport" type="SubViewport" parent="."]
+size = Vector2i(1024, 600)
+render_target_update_mode = 4
+
+[node name="Control" parent="SubViewport" instance=ExtResource("2_xywc0")]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = 0.0
+offset_bottom = 0.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="GeminiRequest" type="HTTPRequest" parent="."]
