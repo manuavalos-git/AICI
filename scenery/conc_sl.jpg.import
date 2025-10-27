@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://bax1nrf7gxlgo"
-path.s3tc="res://.godot/imported/conc_s.jpg-cad3358eb6d513fdf1c9ddc045fb4bb5.s3tc.ctex"
+path.s3tc="res://.godot/imported/conc_sl.jpg-9fa7fc3c9bac64f2f30c52764d2e6a53.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -11,8 +11,8 @@ metadata={
 
 [deps]
 
-source_file="res://scenery/conc_s.jpg"
-dest_files=["res://.godot/imported/conc_s.jpg-cad3358eb6d513fdf1c9ddc045fb4bb5.s3tc.ctex"]
+source_file="res://scenery/conc_sl.jpg"
+dest_files=["res://.godot/imported/conc_sl.jpg-9fa7fc3c9bac64f2f30c52764d2e6a53.s3tc.ctex"]
 
 [params]
 
