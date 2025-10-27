@@ -1,7 +1,8 @@
-[gd_scene load_steps=7 format=3 uid="uid://be0db0gytedhy"]
+[gd_scene load_steps=8 format=3 uid="uid://be0db0gytedhy"]
 
 [ext_resource type="Script" uid="uid://jpmwdaoeoqsu" path="res://Mundo.gd" id="1_ubi47"]
 [ext_resource type="PackedScene" uid="uid://cb54db7iod375" path="res://ChatUI.tscn" id="2_xywc0"]
+[ext_resource type="PackedScene" uid="uid://vg7yt2h1wvhc" path="res://scenery/warehouse_fbx.fbx" id="3_xywc0"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_xwo6f"]
 
@@ -23,13 +24,13 @@ sub_viewport_node = NodePath("SubViewport")
 gemini_request = NodePath("GeminiRequest")
 
 [node name="Camera3D" type="Camera3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.49440312)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 1.4944031)
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("Environment_lgngo")
 
 [node name="Sprite3D" type="Sprite3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.18413866, 0.027894258)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0.18413866, 1.0278943)
 pixel_size = 0.001
 transparent = false
 texture = SubResource("ViewportTexture_ubi47")
@@ -48,3 +49,6 @@ grow_horizontal = 2
 grow_vertical = 2
 
 [node name="GeminiRequest" type="HTTPRequest" parent="."]
+
+[node name="warehouse_fbx" parent="." instance=ExtResource("3_xywc0")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -87, -3, 74)
