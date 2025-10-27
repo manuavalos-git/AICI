@@ -7,6 +7,10 @@ extends Node3D
 
 # ¡NUEVA VARIABLE!
 @export var gemini_request: HTTPRequest
+@onready var sprite = $Sprite3D
+@onready var camera = $Camera3D
+
+var isVisible = false
 
 # ¡TU API KEY! (Conseguila en Google AI Studio)
 var api_key = "AIzaSyDwgIreZnegfT7JnY6b91_lHVIOK4RW0WI"
@@ -100,3 +104,11 @@ func _input(event):
 	elif line_edit.has_focus():
 		sub_viewport_node.push_input(event)
 		get_viewport().set_input_as_handled()
+		
+	if event.is_action_pressed("toggle_sprite"):
+		isVisible = !isVisible
+		sprite.visible = isVisible
+		if isVisible:
+			# Calculamos posición frente a la cámara
+			var cam_transform = camera.global_transform
+			sprite.global_transform.origin = cam_transform.origin + cam_transform.basis.z * -2.0
