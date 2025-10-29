@@ -1,10 +1,11 @@
-[gd_scene load_steps=23 format=4 uid="uid://dfjpjdn5yvp8e"]
+[gd_scene load_steps=27 format=4 uid="uid://dfjpjdn5yvp8e"]
 
 [ext_resource type="PackedScene" uid="uid://d3xba8q1hskwu" path="res://assets/chiller.fbx" id="1_e46xc"]
 [ext_resource type="Script" uid="uid://brp8sq80toduj" path="res://assets/scripts/camera.gd" id="2_gdt01"]
 [ext_resource type="PackedScene" uid="uid://b7ly2liga1hnj" path="res://assets/hvac.fbx" id="3_gdt01"]
 [ext_resource type="PackedScene" uid="uid://ben3118fb4vfq" path="res://assets/asset-pumps.fbx" id="4_h64g8"]
 [ext_resource type="Script" uid="uid://bwkm2x27re34t" path="res://assets/scripts/valve_2.gd" id="5_ctq77"]
+[ext_resource type="PackedScene" uid="uid://bcme7dk6kbs3f" path="res://assets/fresadora/fresadora.glb" id="6_wrkp1"]
 
 [sub_resource type="CapsuleMesh" id="CapsuleMesh_8mp26"]
 
@@ -227,10 +228,17 @@ _data = {
 &"C-Group#6Action": SubResource("Animation_k4ghm")
 }
 
-[node name="Node3D" type="Node3D"]
+[sub_resource type="BoxMesh" id="BoxMesh_c20kl"]
+size = Vector3(1.8, 3, 2.2)
 
-[node name="chiller" parent="." instance=ExtResource("1_e46xc")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 18.177864, 3.8932076, 30.278511)
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_2uo1t"]
+transparency = 1
+albedo_color = Color(1, 1, 1, 0)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_d6ptx"]
+size = Vector3(1.8, 3, 2.2)
+
+[node name="Node3D" type="Node3D"]
 
 [node name="CharacterBody3D" type="CharacterBody3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 55.85578, 0)
@@ -288,7 +296,7 @@ script = ExtResource("5_ctq77")
 [node name="_(Loose Entity)" type="Node3D" parent="valve2"]
 
 [node name="C-Group#6" type="MeshInstance3D" parent="valve2"]
-transform = Transform3D(0.7904354, -0.61254543, 0, 0.61254543, 0.7904354, 0, 0, 0, 1, 0.06588513, 0.033598017, -0.010499984)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.06588513, 0.033598017, -0.010499984)
 mesh = SubResource("ArrayMesh_87dtq")
 skeleton = NodePath("")
 
@@ -302,3 +310,22 @@ libraries = {
 &"": SubResource("AnimationLibrary_tftic")
 }
 movie_quit_on_finish = true
+
+[node name="chiller" parent="." instance=ExtResource("1_e46xc")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 18.177864, 3.8932076, 30.278511)
+
+[node name="StaticBody3D2" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14.641034, 5.8927975, 38.89193)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="StaticBody3D2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.6280003, 0.6999998, -2.7548523)
+mesh = SubResource("BoxMesh_c20kl")
+surface_material_override/0 = SubResource("StandardMaterial3D_2uo1t")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="StaticBody3D2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.628, 0.7, -2.755)
+shape = SubResource("BoxShape3D_d6ptx")
+debug_color = Color(0.42745098, 0.5411765, 0.72156864, 0)
+
+[node name="fresadora" parent="StaticBody3D2" instance=ExtResource("6_wrkp1")]
+transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, -0.739398, -0.82011604, -3.786026)
