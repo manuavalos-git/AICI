@@ -1,0 +1,17 @@
+[gd_scene load_steps=3 format=3 uid="uid://cnq61v3tthqvu"]
+
+[ext_resource type="PackedScene" uid="uid://b6gni8y3haw4e" path="res://assets/llave.fbx" id="1_k8vmt"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_jh7dn"]
+size = Vector3(0.45, 0.1, 0.1)
+
+[node name="llave" instance=ExtResource("1_k8vmt")]
+
+[node name="StaticBody3D" type="StaticBody3D" parent="." index="0"]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="StaticBody3D" index="0"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.26098633, -0.00012207031, 0)
+shape = SubResource("BoxShape3D_jh7dn")
+
+[node name="g Combination_Wrench" parent="." index="1"]
+transform = Transform3D(5.669998, 0, 0, 0, 12.271617, 0, 0, 0, 1, 0.28197697, 0, 0)
