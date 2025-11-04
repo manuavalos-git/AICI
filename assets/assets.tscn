@@ -2343,32 +2343,6 @@ _surfaces = [{
 blend_shape_mode = 0
 shadow_mesh = SubResource("ArrayMesh_k0mne")
 
-[sub_resource type="Animation" id="Animation_cfkt8"]
-resource_name = "action_118"
-length = 5.0
-loop_mode = 2
-tracks/0/type = "position_3d"
-tracks/0/imported = true
-tracks/0/enabled = true
-tracks/0/path = NodePath("G-Object_118")
-tracks/0/interp = 1
-tracks/0/loop_wrap = true
-tracks/0/keys = PackedFloat32Array(0, 1, 1.6423676, 1.0479182, -0.5415078, 0.33333334, 1, 1.6423676, 1.0490019, -0.5415078, 0.5, 1, 1.6423676, 1.050204, -0.5415078, 0.76666665, 1, 1.6423676, 1.0527202, -0.5415078, 1.3666667, 1, 1.6423676, 1.0590817, -0.5415078, 2, 1, 1.6423676, 1.0643985, -0.5415078, 3.2666667, 1, 1.6423676, 1.073506, -0.5415078, 3.6666667, 1, 1.6423676, 1.07708, -0.5415078, 4.366667, 1, 1.6423676, 1.0844457, -0.5415078, 4.5333333, 1, 1.6423676, 1.0858992, -0.5415078, 4.7, 1, 1.6423676, 1.0870278, -0.5415078, 5, 1, 1.6423676, 1.0879185, -0.5415078)
-tracks/1/type = "position_3d"
-tracks/1/imported = true
-tracks/1/enabled = true
-tracks/1/path = NodePath("G-Object_126")
-tracks/1/interp = 1
-tracks/1/loop_wrap = true
-tracks/1/keys = PackedFloat32Array(0, 1, 0.82119113, 0.89530957, -0.06626901)
-tracks/2/type = "rotation_3d"
-tracks/2/imported = true
-tracks/2/enabled = true
-tracks/2/path = NodePath("G-Object_126")
-tracks/2/interp = 1
-tracks/2/loop_wrap = true
-tracks/2/keys = PackedFloat32Array(0, 1, 0, 0, 0, 1)
-
 [sub_resource type="Animation" id="Animation_arid0"]
 resource_name = "G-Object_118Action"
 length = 5.0
@@ -2444,6 +2418,32 @@ tracks/2/path = NodePath("G-Object_118")
 tracks/2/interp = 1
 tracks/2/loop_wrap = true
 tracks/2/keys = PackedFloat32Array(0, 1, 1.6423676, 1.0479182, -0.5415078)
+
+[sub_resource type="Animation" id="Animation_cfkt8"]
+resource_name = "action_118"
+length = 5.0
+loop_mode = 2
+tracks/0/type = "position_3d"
+tracks/0/imported = true
+tracks/0/enabled = true
+tracks/0/path = NodePath("G-Object_118")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = PackedFloat32Array(0, 1, 1.6423676, 1.0479182, -0.5415078, 0.33333334, 1, 1.6423676, 1.0490019, -0.5415078, 0.5, 1, 1.6423676, 1.050204, -0.5415078, 0.76666665, 1, 1.6423676, 1.0527202, -0.5415078, 1.3666667, 1, 1.6423676, 1.0590817, -0.5415078, 2, 1, 1.6423676, 1.0643985, -0.5415078, 3.2666667, 1, 1.6423676, 1.073506, -0.5415078, 3.6666667, 1, 1.6423676, 1.07708, -0.5415078, 4.366667, 1, 1.6423676, 1.0844457, -0.5415078, 4.5333333, 1, 1.6423676, 1.0858992, -0.5415078, 4.7, 1, 1.6423676, 1.0870278, -0.5415078, 5, 1, 1.6423676, 1.0879185, -0.5415078)
+tracks/1/type = "position_3d"
+tracks/1/imported = true
+tracks/1/enabled = true
+tracks/1/path = NodePath("G-Object_126")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = PackedFloat32Array(0, 1, 0.82119113, 0.89530957, -0.06626901)
+tracks/2/type = "rotation_3d"
+tracks/2/imported = true
+tracks/2/enabled = true
+tracks/2/path = NodePath("G-Object_126")
+tracks/2/interp = 1
+tracks/2/loop_wrap = true
+tracks/2/keys = PackedFloat32Array(0, 1, 0, 0, 0, 1)
 
 [sub_resource type="Animation" id="Animation_1h63h"]
 resource_name = "animacionFresadora"
@@ -2538,7 +2538,7 @@ script = ExtResource("3_col2q")
 [node name="_(Loose Entity)" type="Node3D" parent="valve2"]
 
 [node name="C-Group#6" type="MeshInstance3D" parent="valve2"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.06588513, 0.033598017, -0.010499984)
+transform = Transform3D(0.9514054, -0.30794117, 0, 0.30794117, 0.9514054, 0, 0, 0, 1, 0.06588513, 0.033598017, -0.010499984)
 mesh = SubResource("ArrayMesh_87dtq")
 skeleton = NodePath("")
 
