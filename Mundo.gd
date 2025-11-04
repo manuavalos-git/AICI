@@ -36,7 +36,7 @@ var spawned_assets: Array = []
 func _ready():
 	line_edit.text_submitted.connect(_on_text_submitted)
 	gemini_request.request_completed.connect(_on_request_completed)
-
+	sprite.visible = false
 
 # --- 2. FUNCIÓN MODIFICADA ---
 func _on_text_submitted(text):
@@ -94,9 +94,9 @@ func _on_request_completed(result, response_code, headers, body):
 		if typeof(parsed) == TYPE_DICTIONARY:
 			handleBotAction(parsed)
 		else:
-			# respuesta normal
-			print("respuesta normal:"+bot_response)
-			rich_text_label.text += "\n[color=orange]Bot:[/color] " + bot_response
+			# --- NUEVO: fallback al modo charla normal ---
+			print("No se detectó acción. Buscando respuesta general en Gemini...")
+			askGeminiGeneral(bot_response)
 	else:
 		rich_text_label.text += "\n[color=red]Error:[/color] Respuesta vacía o bloqueada."
 		print("Respuesta vacía o bloqueada: ", response_text)
@@ -155,16 +155,16 @@ func insertAsset(name: String):
 
 
 
-# --- NUEVO: heurística simple para encontrar espacio libre ---
-func findFreePosition() -> Vector3:
-	var space = get_world_3d().direct_space_state
-	for i in range(20):
-		var pos = Vector3(randf_range(-5, 5), 0, randf_range(-5, 5))
-		var box_size = Vector3(0.5, 0.5, 0.5)
-		var result = space.intersect_box(Transform3D(Basis(), pos), box_size, [], 1)
-		if result.size() == 0:
-			return pos
-	return Vector3(0, 0, 0)
+## --- NUEVO: heurística simple para encontrar espacio libre ---
+#func findFreePosition() -> Vector3:
+	#var space = get_world_3d().direct_space_state
+	#for i in range(20):
+		#var pos = Vector3(randf_range(-5, 5), 0, randf_range(-5, 5))
+		#var box_size = Vector3(0.5, 0.5, 0.5)
+		#var result = space.intersect_box(Transform3D(Basis(), pos), box_size, [], 1)
+		#if result.size() == 0:
+			#return pos
+	#return Vector3(0, 0, 0)
 	
 func findFreeSpot(base_pos: Vector3, min_distance: float = 1.5, max_attempts: int = 40) -> Vector3:
 	# Distribución en anillos: intenta posiciones alrededor del punto base,
@@ -212,5 +212,32 @@ func _input(event):
 		isVisible = !isVisible
 		sprite.visible = isVisible
 		if isVisible:
-			var cam_transform = camera.global_transform
-			sprite.global_transform.origin = cam_transform.origin + cam_transform.basis.z * -2.0
+			snapChatInFrontOfCamera()
+
+func snapChatInFrontOfCamera() -> void:
+	var cam_t: Transform3D = camera.global_transform
+	var forward: Vector3 = -cam_t.basis.z.normalized() # dirección “hacia adelante” de la cámara
+	var distance: float = 0.5                          # cuán lejos del jugador
+	var height: float = 0.0                            # 0 => misma altura de la cámara
+
+	# posición directamente enfrente
+	var pos: Vector3 = cam_t.origin + forward * distance + Vector3(0, height, 0)
+	sprite.global_position = pos
+
+	# orientación mirando a la cámara
+	sprite.look_at(cam_t.origin, Vector3.UP)
+	sprite.rotate_y(deg_to_rad(180))                   # corrige la inversión
+
+func askGeminiGeneral(user_text: String) -> void:
+	var body := {
+		"contents": [{
+			"role": "user",
+			"parts": [{"text": user_text}]
+		}]
+	}
+
+	var headers := ["Content-Type: application/json"]
+	var url: String = api_url
+
+	rich_text_label.text += "\n[color=orange]Bot:[/color] Buscando información general..."
+	gemini_request.request(url, headers, HTTPClient.METHOD_POST, JSON.stringify(body))

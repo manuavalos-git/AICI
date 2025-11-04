@@ -14,7 +14,7 @@ sky_material = SubResource("ProceduralSkyMaterial_xwo6f")
 background_mode = 2
 sky = SubResource("Sky_6ba58")
 
-[sub_resource type="ViewportTexture" id="ViewportTexture_ubi47"]
+[sub_resource type="ViewportTexture" id="ViewportTexture_gejyx"]
 viewport_path = NodePath("SubViewport")
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_gejyx"]
@@ -37,7 +37,8 @@ environment = SubResource("Environment_lgngo")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0.18413866, 1.0278943)
 pixel_size = 0.001
 transparent = false
-texture = SubResource("ViewportTexture_ubi47")
+texture_filter = 0
+texture = SubResource("ViewportTexture_gejyx")
 
 [node name="SubViewport" type="SubViewport" parent="."]
 size = Vector2i(1024, 600)
