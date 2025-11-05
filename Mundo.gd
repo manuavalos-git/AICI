@@ -32,6 +32,27 @@ No uses texto fuera del JSON.
 
 var spawned_assets: Array = []
 
+# NUEVO: Contador de instancias por asset
+var asset_spawn_count = {}
+
+# NUEVO: Límites de spawneo por asset (cuántos máximo se pueden crear)
+var asset_spawn_limits = {
+	"valvula": 1,     
+	"fresadora": 1,    
+	"llave": 5,        
+}
+
+#  NUEVO: Posiciones y rotaciones fijas para assets específicos
+var fixed_positions = {
+	"valvula": {
+		"position": Vector3(0.657, 0.05, 0.96),
+		"rotation": Vector3(0, 0, 0)
+	},
+	"fresadora": {
+		"position": Vector3(-1.909, -1.027, -2.221),
+		"rotation": Vector3(0, -180, 0)  # Y rotado -180 grados
+	}
+}
 
 func _ready():
 	line_edit.text_submitted.connect(_on_text_submitted)
@@ -122,6 +143,20 @@ func handleBotAction(parsed: Dictionary):
 # --- NUEVO: insertar asset en el mundo ---
 func insertAsset(name: String):
 	print("insertAsset")
+	var asset_key = name.to_lower()
+	
+	#  VERIFICAR SI EL ASSET TIENE LÍMITE DE SPAWNEO
+	if asset_spawn_limits.has(asset_key):
+		var current_count = asset_spawn_count.get(asset_key, 0)
+		var max_limit = asset_spawn_limits[asset_key]
+		
+		if current_count >= max_limit:
+			# Ya se alcanzó el límite
+			var msg = "No se puede crear otro/a '" + name + "'. Ya existe " + str(current_count) + " en la escena (máximo: " + str(max_limit) + ")."
+			rich_text_label.text += "\n[color=red]Error:[/color] " + msg
+			print(msg)
+			return  # ← Salir sin crear el asset
+	
 	var scene = asset_manager.getAsset(name)
 	if scene == null:
 		rich_text_label.text += "\n[color=red]Error:[/color] No se encontró el asset '" + name + "'."
@@ -129,31 +164,73 @@ func insertAsset(name: String):
 	
 	var instance = scene.instantiate()
 	instance.name = name + "_" + str(Time.get_ticks_msec())
-	instance.scale = Vector3(2, 2, 2)
-
-	# --- Posición frente a cámara ---
-	var cam_transform = camera.global_transform
-	var forward = -cam_transform.basis.z.normalized()
-	var start_pos = cam_transform.origin + forward * 3.0 + Vector3(0, 2.0, 0)
-
-	# --- Buscar el piso con raycast ---
-	var space = get_world_3d().direct_space_state
-	var ray_params = PhysicsRayQueryParameters3D.create(start_pos, start_pos + Vector3(0, -20, 0))
-	var ray_result = space.intersect_ray(ray_params)
-
-	if ray_result.size() > 0:
-		var ground_pos = ray_result.position
-		var free_pos = findFreeSpot(ground_pos, 1.5)  # ← ahora es por distancia
-		instance.global_transform.origin = free_pos
+	
+	#  VERIFICAR SI EL ASSET TIENE POSICIÓN FIJA
+	if fixed_positions.has(asset_key):
+		# Usar posición y rotación fijas
+		var fixed_data = fixed_positions[asset_key]
+		instance.global_transform.origin = fixed_data.position
+		
+		# Aplicar rotación (convertir de grados a radianes)
+		instance.rotation_degrees = fixed_data.rotation
+		
+		print("Asset '", name, "' colocado en posición fija: ", fixed_data.position)
+		rich_text_label.text += "\n[color=green]Sistema:[/color] Se insertó " + name + " en posición fija."
 	else:
-		instance.global_transform.origin = start_pos + Vector3(0, -1.0, 0)
+		# Posición dinámica 
+		instance.scale = Vector3(2, 2, 2)
 
+		# --- Posición frente a cámara ---
+		var cam_transform = camera.global_transform
+		var forward = -cam_transform.basis.z.normalized()
+		var start_pos = cam_transform.origin + forward * 3.0 + Vector3(0, 2.0, 0)
+
+		# --- Buscar el piso con raycast ---
+		var space = get_world_3d().direct_space_state
+		var ray_params = PhysicsRayQueryParameters3D.create(start_pos, start_pos + Vector3(0, -20, 0))
+		var ray_result = space.intersect_ray(ray_params)
+
+		if ray_result.size() > 0:
+			var ground_pos = ray_result.position
+			var free_pos = findFreeSpot(ground_pos, 1.5)  # ← ahora es por distancia
+			instance.global_transform.origin = free_pos
+		else:
+			instance.global_transform.origin = start_pos + Vector3(0, -1.0, 0)
+
+	# --- Iniciar animación automáticamente  de los assets ---
+	var anim_player = findAnimationPlayerInNode(instance)
+	if anim_player:
+		# Opción 1: Reproducir animación específica
+		if anim_player.has_animation("Fresadora_TodoJunto"):
+			anim_player.play("Fresadora_TodoJunto")
+			print("Animación 'Fresadora_TodoJunto' iniciada")
+		# Opción 2: Reproducir la primera animación disponible
+		elif anim_player.get_animation_list().size() > 0:
+			var first_anim = anim_player.get_animation_list()[0]
+			anim_player.play(first_anim)
+			print("Animación '", first_anim, "' iniciada")
 
 	get_tree().current_scene.add_child(instance)
 	spawned_assets.append(instance)
 	rich_text_label.text += "\n[color=green]Sistema:[/color] Se insertó " + name + " en " + str(instance.global_transform.origin)
+	
+	# INCREMENTAR EL CONTADOR DE ASSET GENERADO
+	if asset_spawn_count.has(asset_key):
+		asset_spawn_count[asset_key] += 1
+	else:
+		asset_spawn_count[asset_key] = 1
 
-
+# --- para animacion de los elementos ---
+func findAnimationPlayerInNode(node: Node) -> AnimationPlayer:
+	if node is AnimationPlayer:
+		return node
+	
+	for child in node.get_children():
+		var result = findAnimationPlayerInNode(child)
+		if result:
+			return result
+	
+	return null
 
 ## --- NUEVO: heurística simple para encontrar espacio libre ---
 #func findFreePosition() -> Vector3:
