@@ -2,11 +2,9 @@
 
 [ext_resource type="PackedScene" uid="uid://d3xba8q1hskwu" path="res://assets/chiller.fbx" id="1_e46xc"]
 [ext_resource type="Script" uid="uid://0ptygha3hjyh" path="res://assets/scripts/valve2.gd" id="3_col2q"]
-[ext_resource type="PackedScene" uid="uid://b7ly2liga1hnj" path="res://assets/hvac.fbx" id="3_gdt01"]
 [ext_resource type="PackedScene" uid="uid://ben3118fb4vfq" path="res://assets/asset-pumps.fbx" id="4_h64g8"]
 [ext_resource type="Script" uid="uid://bhjwq1oviu1d2" path="res://assets/scripts/fresadora_2.gd" id="5_col2q"]
 [ext_resource type="Texture2D" uid="uid://cvunregc4oqdn" path="res://assets/fresadora2/fresadora2_Metal_Seamed.png" id="6_1h63h"]
-[ext_resource type="PackedScene" uid="uid://bcme7dk6kbs3f" path="res://assets/fresadora/fresadora.glb" id="6_wrkp1"]
 [ext_resource type="Texture2D" uid="uid://bfnfqpfacheso" path="res://assets/fresadora2/fresadora2_Metal_Corrogated_Shiny.png" id="7_g6acp"]
 [ext_resource type="Texture2D" uid="uid://d3wm7k7a0ut82" path="res://assets/fresadora2/fresadora2_metal.png" id="8_3k5u0"]
 [ext_resource type="Texture2D" uid="uid://3cnb38ygh11d" path="res://assets/fresadora2/fresadora2_screw-thread.png" id="9_2bcn4"]
@@ -2480,6 +2478,12 @@ _data = {
 &"animacionFresadora": SubResource("Animation_1h63h")
 }
 
+[sub_resource type="BoxMesh" id="BoxMesh_1h63h"]
+size = Vector3(2.3, 2.6, 5.55)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_g6acp"]
+size = Vector3(2.3, 2.6, 5.55)
+
 [node name="Node3D" type="Node3D"]
 
 [node name="CharacterBody3D" type="CharacterBody3D" parent="."]
@@ -2525,9 +2529,6 @@ shadow_enabled = true
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("Environment_e46xc")
 
-[node name="hvac" parent="." instance=ExtResource("3_gdt01")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 11.238722, 5, 26.531809)
-
 [node name="asset-pumps" parent="." instance=ExtResource("4_h64g8")]
 transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, -7.3117733, 5.079929, 41.32097)
 
@@ -2552,25 +2553,6 @@ libraries = {
 &"": SubResource("AnimationLibrary_tftic")
 }
 movie_quit_on_finish = true
-
-[node name="chiller" parent="." instance=ExtResource("1_e46xc")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 18.177864, 3.8932076, 30.278511)
-
-[node name="StaticBody3D2" type="StaticBody3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14.641034, 5.8927975, 38.89193)
-
-[node name="MeshInstance3D" type="MeshInstance3D" parent="StaticBody3D2"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.6280003, 0.6999998, -2.7548523)
-mesh = SubResource("BoxMesh_c20kl")
-surface_material_override/0 = SubResource("StandardMaterial3D_2uo1t")
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="StaticBody3D2"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.628, 0.7, -2.755)
-shape = SubResource("BoxShape3D_d6ptx")
-debug_color = Color(0.42745098, 0.5411765, 0.72156864, 0)
-
-[node name="fresadora" parent="StaticBody3D2" instance=ExtResource("6_wrkp1")]
-transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, -0.739398, -0.82011604, -3.786026)
 
 [node name="fresadora-animada" type="StaticBody3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.944804, 5.427146, 32.808167)
@@ -2769,3 +2751,20 @@ skeleton = NodePath("")
 libraries = {
 &"": SubResource("AnimationLibrary_xl2er")
 }
+
+[node name="chiller1" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 21.006008, 5.190175, 24.711826)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="chiller1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.81947327, 1.2823992, 3.1886158)
+visible = false
+mesh = SubResource("BoxMesh_1h63h")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="chiller1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.819, 1.282, 3.189)
+visible = false
+shape = SubResource("BoxShape3D_g6acp")
+debug_color = Color(0.8384788, 0.31347567, 0.5911253, 0.41960785)
+
+[node name="chiller" parent="chiller1" instance=ExtResource("1_e46xc")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.8279972, -1.470357, 5.5668335)

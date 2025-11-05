@@ -1,0 +1,26 @@
+[gd_scene load_steps=4 format=3 uid="uid://ck7i47uh3y8ct"]
+
+[ext_resource type="PackedScene" uid="uid://d3xba8q1hskwu" path="res://assets/chiller.fbx" id="1_6o1tw"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_drrim"]
+size = Vector3(2.3, 2.6, 5.55)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_as70k"]
+size = Vector3(2.3, 2.6, 5.55)
+
+[node name="chiller1" type="StaticBody3D"]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 0, 0, 0)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.81947327, 1.2823992, 3.1886158)
+visible = false
+mesh = SubResource("BoxMesh_drrim")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.819, 1.282, 3.189)
+visible = false
+shape = SubResource("BoxShape3D_as70k")
+debug_color = Color(0.8384788, 0.31347567, 0.5911253, 0.41960785)
+
+[node name="chiller" parent="." instance=ExtResource("1_6o1tw")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.8279972, -1.470357, 5.5668335)

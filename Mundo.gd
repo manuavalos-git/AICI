@@ -38,7 +38,8 @@ var asset_spawn_count = {}
 # NUEVO: Límites de spawneo por asset (cuántos máximo se pueden crear)
 var asset_spawn_limits = {
 	"valvula": 1,     
-	"fresadora": 1,    
+	"fresadora": 1,
+	"chiller": 1,    
 	"llave": 5,        
 }
 
@@ -49,8 +50,12 @@ var fixed_positions = {
 		"rotation": Vector3(0, 0, 0)
 	},
 	"fresadora": {
-		"position": Vector3(-1.909, -1.027, -2.221),
+		"position": Vector3(-2.759, -1.027, -2.221),
 		"rotation": Vector3(0, -180, 0)  # Y rotado -180 grados
+	},
+	"chiller": {
+		"position": Vector3(3.811, -1.755, -6.491),
+		"rotation": Vector3(0, 90, 0) 	
 	}
 }
 
