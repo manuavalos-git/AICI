@@ -1,9 +1,10 @@
-[gd_scene load_steps=10 format=3 uid="uid://be0db0gytedhy"]
+[gd_scene load_steps=11 format=3 uid="uid://be0db0gytedhy"]
 
 [ext_resource type="Script" uid="uid://jpmwdaoeoqsu" path="res://Mundo.gd" id="1_ubi47"]
 [ext_resource type="PackedScene" uid="uid://cb54db7iod375" path="res://ChatUI.tscn" id="2_xywc0"]
 [ext_resource type="PackedScene" uid="uid://vg7yt2h1wvhc" path="res://scenery/warehouse_fbx.fbx" id="3_xywc0"]
-[ext_resource type="Script" uid="uid://cswit7xlkn6cd" path="res://asset_manager.gd" id="4_gejyx"]
+[ext_resource type="Script" uid="uid://be1vdxeqgytcg" path="res://CameraController.gd" id="4_camera"]
+[ext_resource type="Script" uid="uid://cswit7xlkn6cd" path="res://asset_manager.gd" id="5_5yunf"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_xwo6f"]
 
@@ -14,31 +15,41 @@ sky_material = SubResource("ProceduralSkyMaterial_xwo6f")
 background_mode = 2
 sky = SubResource("Sky_6ba58")
 
-[sub_resource type="ViewportTexture" id="ViewportTexture_gejyx"]
+[sub_resource type="ViewportTexture" id="ViewportTexture_ubi47"]
 viewport_path = NodePath("SubViewport")
 
-[sub_resource type="BoxShape3D" id="BoxShape3D_gejyx"]
-size = Vector3(112.30658, 1, 54.63379)
+[sub_resource type="BoxShape3D" id="BoxShape3D_5yunf"]
+size = Vector3(112.307, 1, 54.634)
 
-[node name="Mundo" type="Node3D" node_paths=PackedStringArray("line_edit", "rich_text_label", "sub_viewport_node", "gemini_request")]
+[node name="Mundo" type="Node3D" node_paths=PackedStringArray("line_edit", "rich_text_label", "sub_viewport_node", "chat_ui", "gemini_request")]
 script = ExtResource("1_ubi47")
 line_edit = NodePath("SubViewport/Control/VBoxContainer/LineEdit")
 rich_text_label = NodePath("SubViewport/Control/VBoxContainer/RichTextLabel")
 sub_viewport_node = NodePath("SubViewport")
+chat_ui = NodePath("SubViewport/Control")
 gemini_request = NodePath("GeminiRequest")
 
 [node name="Camera3D" type="Camera3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 1.4944031)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0.12248099, 1.8748475)
+script = ExtResource("4_camera")
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("Environment_lgngo")
 
+[node name="StatusLabel3D" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 2, 0)
+billboard = 1
+text = "🎮 FREE CAM: ACTIVADA
+WASD: Mover | Mouse: Mirar | Espacio: Subir | Shift: Bajar
+CTRL: Desactivar camara | T: Minimizar/Maximizar chat
+💬 CHAT: Click + Arrastra en 3D | Rueda: Zoom | Click en texto para escribir"
+outline_size = 8
+
 [node name="Sprite3D" type="Sprite3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0.18413866, 1.0278943)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0.18413866, 1.0278943)
 pixel_size = 0.001
 transparent = false
-texture_filter = 0
-texture = SubResource("ViewportTexture_gejyx")
+texture = SubResource("ViewportTexture_ubi47")
 
 [node name="SubViewport" type="SubViewport" parent="."]
 size = Vector2i(1024, 600)
@@ -59,10 +70,10 @@ grow_vertical = 2
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -87, -3, 74)
 
 [node name="AssetManager" type="Node" parent="."]
-script = ExtResource("4_gejyx")
+script = ExtResource("5_5yunf")
 
 [node name="FloorCollision" type="StaticBody3D" parent="."]
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="FloorCollision"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 53.28116, -2.3119652, -0.5415039)
-shape = SubResource("BoxShape3D_gejyx")
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 53.281, -2.312, -0.542)
+shape = SubResource("BoxShape3D_5yunf")

@@ -1,10 +1,16 @@
-[gd_scene format=3 uid="uid://cb54db7iod375"]
+[gd_scene load_steps=3 format=3 uid="uid://cb54db7iod375"]
+
+[ext_resource type="Script" path="res://ChatUI.gd" id="1_chatui"]
+
+[sub_resource type="LabelSettings" id="LabelSettings_title"]
+font_size = 14
 
 [node name="Control" type="Control"]
 layout_mode = 3
 anchors_preset = 0
 offset_right = 1024.0
 offset_bottom = 600.0
+script = ExtResource("1_chatui")
 
 [node name="ColorRect" type="ColorRect" parent="."]
 layout_mode = 1
@@ -15,11 +21,21 @@ grow_horizontal = 2
 grow_vertical = 2
 color = Color(0.41215247, 0.41215247, 0.41215247, 1)
 
+[node name="TitleLabel" type="Label" parent="."]
+layout_mode = 0
+offset_left = 10.0
+offset_top = 5.0
+offset_right = 300.0
+offset_bottom = 35.0
+text = "💬 CHAT AI (Click + Arrastra en 3D | T minimizar)"
+label_settings = SubResource("LabelSettings_title")
+
 [node name="VBoxContainer" type="VBoxContainer" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+offset_top = 40.0
 grow_horizontal = 2
 grow_vertical = 2
 

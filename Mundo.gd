@@ -4,31 +4,31 @@ extends Node3D
 @export var line_edit: LineEdit
 @export var rich_text_label: RichTextLabel
 @export var sub_viewport_node: SubViewport
+@export var chat_ui: Control  # Nueva referencia al ChatUI
 
 # ¡NUEVA VARIABLE!
 @export var gemini_request: HTTPRequest
 @onready var sprite = $Sprite3D
 @onready var camera = $Camera3D
+@onready var camera_controller = $Camera3D  # Referencia al script de la cámara
 
 var isVisible = false
+var is_dragging_chat = false
+var drag_start_pos = Vector2.ZERO
+
+# Sistema de instrucciones y visión
+var system_prompt = ""
+var conversation_history = []
+var screenshot_data = ""
+
+# ¡TU API KEY! (Conseguila en Google AI Studio)
+var api_key = "AIzaSyDwgIreZnegfT7JnY6b91_lHVIOK4RW0WI"
+
+# La URL de la API de Gemini Vision (2.0 flash soporta imágenes)
+var api_url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=" + api_key
 
 # --- NUEVO: referencia al AssetManager ---
 @onready var asset_manager = $AssetManager
-
-# ¡TU API KEY! (Conseguila en Google AI Studio)
-var api_key = "AIzaSyB2uzFzx1TzUn138iq_8BYVtrEHgvikSNQ"
-
-# La URL de la API de Gemini
-var api_url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=" + api_key
-
-# --- NUEVO: prompt del sistema ---
-var system_prompt = """
-Eres un asistente dentro de un mundo 3D de Godot VR.
-Si el usuario pide insertar o agregar un objeto, responde SOLO en JSON con los campos:
-action ('insert' o 'say') y asset (nombre del objeto o texto a decir).
-Ejemplo: {"action":"insert","asset":"silla"} o {"action":"say","asset":"ok"}.
-No uses texto fuera del JSON.
-"""
 
 var spawned_assets: Array = []
 
@@ -44,6 +44,7 @@ var asset_spawn_limits = {
 }
 
 #  NUEVO: Posiciones y rotaciones fijas para assets específicos
+#TODO: BORRAR ESTO PARA QUE SEA MAS DINAMICO Y NO ESTE TAN HARDCODED
 var fixed_positions = {
 	"valvula": {
 		"position": Vector3(0.657, 0.05, 0.96),
@@ -59,40 +60,115 @@ var fixed_positions = {
 	}
 }
 
+
 func _ready():
+	# Cargar el system prompt desde el archivo
+	load_system_prompt()
+	
+	# 1. Conectar la UI (esto ya lo tenías)
 	line_edit.text_submitted.connect(_on_text_submitted)
+	
+	# Conectar señales de focus del LineEdit
+	line_edit.focus_entered.connect(_on_line_edit_focus_entered)
+	line_edit.focus_exited.connect(_on_line_edit_focus_exited)
+	
+	# 2. ¡NUEVA CONEXIÓN!
+	# Conectamos la señal de "request_completed" del nodo HTTPRequest
+	# a una nueva función que crearemos.
 	gemini_request.request_completed.connect(_on_request_completed)
-	sprite.visible = false
+	
+	# Mensaje de bienvenida
+	rich_text_label.text = "[color=orange]🏭 Asistente Industrial:[/color] ¡Hola! Soy tu asistente de enseñanza industrial. Puedo ayudarte a aprender sobre herramientas, maquinaria y equipos industriales.\n\n💡 Comandos especiales:\n- Escribe 'ver' o 'captura' para que vea lo que estás viendo en el simulador\n- Pregúntame sobre cualquier herramienta o equipo industrial\n- Pídeme que te muestre objetos 3D\n\n¿En qué puedo ayudarte?"
+
+func load_system_prompt():
+	var file_path = "res://system_prompt_industrial.md"
+	if FileAccess.file_exists(file_path):
+		var file = FileAccess.open(file_path, FileAccess.READ)
+		system_prompt = file.get_as_text()
+		file.close()
+		print("✅ System prompt cargado: ", system_prompt.length(), " caracteres")
+	else:
+		print("⚠️ No se encontró system_prompt_industrial.md, usando prompt básico")
+		system_prompt = "Eres un asistente de enseñanza industrial especializado en equipamiento, herramientas y procesos industriales. Ayuda a los usuarios a aprender de manera clara y práctica."
+	system_prompt += "\n\nIMPORTANTE:\n" \
+		+ "Cuando el usuario pida insertar, agregar, crear o mostrar un objeto 3D, " \
+		+ "debes responder SOLO en formato JSON, sin texto adicional, con las siguientes claves:\n" \
+		+ "{ \"action\": \"insert\", \"asset\": \"<nombre_del_asset>\" }\n" \
+		+ "Ejemplo: {\"action\":\"insert\",\"asset\":\"fresadora\"}"
+
 
 # --- 2. FUNCIÓN MODIFICADA ---
 func _on_text_submitted(text):
 	rich_text_label.text += "\n[color=lightblue]Tú:[/color] " + text
 	line_edit.text = ""
+
+	# Detectar si hay que hacer captura
+	var needs_screenshot = false
+	var text_lower = text.to_lower()
+	if "ver" in text_lower or "captura" in text_lower or "mira" in text_lower or "observa" in text_lower or "qué ves" in text_lower or "que ves" in text_lower:
+		needs_screenshot = true
+		rich_text_label.text += "\n[color=yellow]📸 Capturando pantalla...[/color]"
+
 	rich_text_label.text += "\n[color=orange]Bot:[/color] Pensando..."
 
-	# --- NUEVO: incluimos el prompt del sistema ---
-	var body = {
-		"contents": [
-			{
-				"role": "user",
-				"parts": [
-					{
-						"text": system_prompt + "\n\nUsuario: " + text
-					}
-				]
+	if needs_screenshot:
+		await take_screenshot()
+
+	# Construir el mensaje del usuario
+	var user_parts = []
+	if needs_screenshot and screenshot_data != "":
+		user_parts.append({
+			"inline_data": {
+				"mime_type": "image/png",
+				"data": screenshot_data
 			}
-		]
+		})
+	user_parts.append({"text": text})
+
+	var body = {
+		"system_instruction": {"parts": [{"text": system_prompt}]},
+		"contents": [{"role": "user", "parts": user_parts}]
 	}
 
+	# --- 🔥 NUEVO BLOQUE: decidir si pedir JSON o texto ---
+	var force_json = false
+	var keywords = ["insertar", "crear", "agregar", "mostrar", "colocar", "poner"]
+	for word in keywords:
+		if word in text_lower:
+			force_json = true
+			break
 
-	
+	if force_json:
+		body["generation_config"] = {"response_mime_type": "application/json"}
+	else:
+		body["generation_config"] = {"response_mime_type": "text/plain"}
+
 	var body_json = JSON.stringify(body)
 	var headers = ["Content-Type: application/json"]
 
 	gemini_request.request(api_url, headers, HTTPClient.METHOD_POST, body_json)
 
 
-# --- 3. FUNCIÓN MODIFICADA ---
+
+# Función para tomar captura de pantalla
+func take_screenshot():
+	# Esperar un frame para asegurar que todo esté renderizado
+	await get_tree().process_frame
+	
+	# Capturar la imagen del viewport
+	var img = get_viewport().get_texture().get_image()
+	
+	# Convertir a PNG
+	var png_data = img.save_png_to_buffer()
+	
+	# Convertir a base64 para enviar a la API
+	screenshot_data = Marshalls.raw_to_base64(png_data)
+	
+	print("📸 Captura tomada: ", screenshot_data.length(), " caracteres en base64")
+
+
+# --- 3. NUEVA FUNCIÓN ---
+# Esta función se llama AUTOMÁTICAMENTE cuando la API responde
 func _on_request_completed(result, response_code, headers, body):
 	if response_code != 200:
 		rich_text_label.text += "\n[color=red]Error:[/color] No se pudo conectar. Código: " + str(response_code)
@@ -101,32 +177,139 @@ func _on_request_completed(result, response_code, headers, body):
 
 	var response_text = body.get_string_from_utf8()
 	var json_data = JSON.parse_string(response_text)
-	
+
+	if json_data == null:
+		rich_text_label.text += "\n[color=red]Error:[/color] Respuesta inválida del servidor."
+		print("Respuesta inválida: ", response_text)
+		return
+
 	if json_data.get("candidates") and json_data.candidates[0].get("content"):
-		var bot_response = json_data.candidates[0].content.parts[0].text.strip_edges()
-		print("Respuesta de Gemini:", bot_response)
-		
-		var parsed_text = bot_response.strip_edges()
+		var bot_response = json_data.candidates[0].content.parts[0].text
+		print("🧠 Respuesta cruda de Gemini:\n", bot_response)
 
-		# eliminar bloques tipo ```json ... ``` si los hay
-		if parsed_text.begins_with("```"):
-			parsed_text = parsed_text.replace("```json", "")
-			parsed_text = parsed_text.replace("```", "")
-			parsed_text = parsed_text.strip_edges()
+		# Intentar parsear JSON si la respuesta del bot es estructurada
+		var parsed = {}
+		var clean_response = bot_response.strip_edges()
 
-		print("Intentando parsear:", parsed_text)
+		# Buscar un bloque JSON dentro de la respuesta aunque tenga texto adicional
+		var json_start = clean_response.find("{")
+		var json_end = clean_response.rfind("}")
+		if json_start != -1 and json_end != -1:
+			var json_substring = clean_response.substr(json_start, json_end - json_start + 1)
+			var parsed_json = JSON.parse_string(json_substring)
+			if typeof(parsed_json) == TYPE_DICTIONARY:
+				parsed = parsed_json
 
-		var parsed = JSON.parse_string(parsed_text)
-		if typeof(parsed) == TYPE_DICTIONARY:
+
+		# Si contiene 'action', interpretamos como comando
+		if parsed.has("action"):
 			handleBotAction(parsed)
+			return
 		else:
-			# --- NUEVO: fallback al modo charla normal ---
-			print("No se detectó acción. Buscando respuesta general en Gemini...")
-			askGeminiGeneral(bot_response)
+			# Si no hay acción, mostramos texto normal
+			rich_text_label.text += "\n[color=orange]Bot:[/color] " + bot_response
 	else:
-		rich_text_label.text += "\n[color=red]Error:[/color] Respuesta vacía o bloqueada."
+		rich_text_label.text += "\n[color=red]Error:[/color] La API devolvió una respuesta vacía."
 		print("Respuesta vacía o bloqueada: ", response_text)
 
+# Funciones para manejar el focus del chat
+func _on_line_edit_focus_entered():
+	# Desactivar controles de cámara cuando se enfoca el chat
+	if camera_controller and camera_controller.has_method("disable_movement"):
+		camera_controller.disable_movement()
+	print("Chat enfocado - Controles desactivados")
+
+func _on_line_edit_focus_exited():
+	# Reactivar controles cuando se desenfoca el chat
+	if camera_controller and camera_controller.has_method("enable_movement"):
+		camera_controller.enable_movement()
+	print("Chat desenfocado - Controles reactivados")
+
+
+func _input(event):
+	# Zoom del chat con la rueda del mouse (solo cuando NO estás escribiendo)
+	if event is InputEventMouseButton and not line_edit.has_focus():
+		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
+			# Acercar el chat (aumentar escala)
+			sprite.scale += Vector3(0.1, 0.1, 0.1)
+			sprite.scale = sprite.scale.clamp(Vector3(0.5, 0.5, 0.5), Vector3(5.0, 5.0, 5.0))
+			get_viewport().set_input_as_handled()
+			return
+		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+			# Alejar el chat (disminuir escala)
+			sprite.scale -= Vector3(0.1, 0.1, 0.1)
+			sprite.scale = sprite.scale.clamp(Vector3(0.5, 0.5, 0.5), Vector3(5.0, 5.0, 5.0))
+			get_viewport().set_input_as_handled()
+			return
+	
+	# Toggle chat con tecla T
+	if event.is_action_pressed("ui_text_completion_accept") or (event is InputEventKey and event.pressed and event.keycode == KEY_T and not line_edit.has_focus()):
+		if chat_ui and chat_ui.has_method("toggle_minimize"):
+			chat_ui.toggle_minimize()
+		get_viewport().set_input_as_handled()
+		return
+	
+	# Manejar arrastre del chat en 3D (solo si NO está escribiendo)
+	if not line_edit.has_focus():
+		if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
+			if event.pressed:
+				# Verificar si el click está sobre el chat (Sprite3D)
+				var mouse_pos = get_viewport().get_mouse_position()
+				
+				# Si no hay colisión, verificar si está sobre el sprite visualmente
+				var sprite_screen_pos = camera.unproject_position(sprite.global_transform.origin)
+				var distance_to_sprite = mouse_pos.distance_to(sprite_screen_pos)
+				
+				# Si está cerca del sprite (dentro de un radio aproximado)
+				if distance_to_sprite < 400:  # Radio de detección ajustable
+					is_dragging_chat = true
+					drag_start_pos = mouse_pos
+					get_viewport().set_input_as_handled()
+					return
+			else:
+				is_dragging_chat = false
+		
+		elif event is InputEventMouseMotion and is_dragging_chat:
+			# Mover el sprite en el espacio 3D según el movimiento del mouse
+			var mouse_pos = get_viewport().get_mouse_position()
+			var delta_mouse = mouse_pos - drag_start_pos
+			drag_start_pos = mouse_pos
+			
+			# Convertir movimiento 2D a movimiento 3D
+			var cam_transform = camera.global_transform
+			var right = cam_transform.basis.x
+			var up = cam_transform.basis.y
+			
+			# Mover el sprite
+			sprite.global_transform.origin += right * delta_mouse.x * 0.005
+			sprite.global_transform.origin += -up * delta_mouse.y * 0.005
+			
+			get_viewport().set_input_as_handled()
+			return
+	else:
+		# Si está escribiendo, detener cualquier arrastre
+		is_dragging_chat = false
+	
+	if event.is_action_pressed("ui_focus_next"): 
+		if line_edit.has_focus():
+			line_edit.release_focus()
+			print("Chat desenfocado")
+		else:
+			line_edit.grab_focus()
+			print("Chat enfocado")
+		get_viewport().set_input_as_handled()
+	elif line_edit.has_focus():
+		sub_viewport_node.push_input(event)
+		get_viewport().set_input_as_handled()
+		
+	# Toggle sprite solo cuando NO estás escribiendo
+	if event.is_action_pressed("toggle_sprite") and not line_edit.has_focus():
+		isVisible = !isVisible
+		sprite.visible = isVisible
+		if isVisible:
+			# Calculamos posición frente a la cámara
+			var cam_transform = camera.global_transform
+			sprite.global_transform.origin = cam_transform.origin + cam_transform.basis.z * -2.0
 
 # --- NUEVO: manejar acciones del bot ---
 func handleBotAction(parsed: Dictionary):
@@ -275,51 +458,3 @@ func findFreeSpot(base_pos: Vector3, min_distance: float = 1.5, max_attempts: in
 
 	# Si no encontró nada “perfecto”, usa el base_pos
 	return base_pos
-
-# --- TU FUNCIÓN DE INPUT (idéntica) ---
-func _input(event):
-	if event.is_action_pressed("ui_focus_next"): 
-		if line_edit.has_focus():
-			line_edit.release_focus()
-			print("Chat desenfocado")
-		else:
-			line_edit.grab_focus()
-			print("Chat enfocado")
-		get_viewport().set_input_as_handled()
-	elif line_edit.has_focus():
-		sub_viewport_node.push_input(event)
-		get_viewport().set_input_as_handled()
-		
-	if event.is_action_pressed("toggle_sprite"):
-		isVisible = !isVisible
-		sprite.visible = isVisible
-		if isVisible:
-			snapChatInFrontOfCamera()
-
-func snapChatInFrontOfCamera() -> void:
-	var cam_t: Transform3D = camera.global_transform
-	var forward: Vector3 = -cam_t.basis.z.normalized() # dirección “hacia adelante” de la cámara
-	var distance: float = 0.5                          # cuán lejos del jugador
-	var height: float = 0.0                            # 0 => misma altura de la cámara
-
-	# posición directamente enfrente
-	var pos: Vector3 = cam_t.origin + forward * distance + Vector3(0, height, 0)
-	sprite.global_position = pos
-
-	# orientación mirando a la cámara
-	sprite.look_at(cam_t.origin, Vector3.UP)
-	sprite.rotate_y(deg_to_rad(180))                   # corrige la inversión
-
-func askGeminiGeneral(user_text: String) -> void:
-	var body := {
-		"contents": [{
-			"role": "user",
-			"parts": [{"text": user_text}]
-		}]
-	}
-
-	var headers := ["Content-Type: application/json"]
-	var url: String = api_url
-
-	rich_text_label.text += "\n[color=orange]Bot:[/color] Buscando información general..."
-	gemini_request.request(url, headers, HTTPClient.METHOD_POST, JSON.stringify(body))
