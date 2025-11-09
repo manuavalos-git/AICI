@@ -1,8 +1,10 @@
-[gd_scene load_steps=8 format=3 uid="uid://be0db0gytedhy"]
+[gd_scene load_steps=13 format=3 uid="uid://be0db0gytedhy"]
 
 [ext_resource type="Script" uid="uid://jpmwdaoeoqsu" path="res://Mundo.gd" id="1_ubi47"]
 [ext_resource type="PackedScene" uid="uid://cb54db7iod375" path="res://ChatUI.tscn" id="2_xywc0"]
 [ext_resource type="PackedScene" uid="uid://vg7yt2h1wvhc" path="res://scenery/warehouse_fbx.fbx" id="3_xywc0"]
+[ext_resource type="PackedScene" uid="uid://d1quwsfx0o32u" path="res://player/player.tscn" id="4_gejyx"]
+[ext_resource type="Script" uid="uid://bj1b1dieclvcl" path="res://player/player.gd" id="5_5yunf"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_xwo6f"]
 
@@ -13,33 +15,63 @@ sky_material = SubResource("ProceduralSkyMaterial_xwo6f")
 background_mode = 2
 sky = SubResource("Sky_6ba58")
 
+[sub_resource type="PlaneMesh" id="PlaneMesh_gejyx"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_5yunf"]
+size = Vector3(149.72998, 0.1, 97.85376)
+
 [sub_resource type="ViewportTexture" id="ViewportTexture_ubi47"]
-viewport_path = NodePath("SubViewport")
+viewport_path = NodePath("Player/Camera3D/SubViewport")
 
-[node name="Mundo" type="Node3D" node_paths=PackedStringArray("line_edit", "rich_text_label", "sub_viewport_node", "gemini_request")]
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_5yunf"]
+height = 1.8
+
+[node name="Mundo" type="Node3D" node_paths=PackedStringArray("line_edit", "rich_text_label", "gemini_request")]
 script = ExtResource("1_ubi47")
-line_edit = NodePath("SubViewport/Control/VBoxContainer/LineEdit")
-rich_text_label = NodePath("SubViewport/Control/VBoxContainer/RichTextLabel")
-sub_viewport_node = NodePath("SubViewport")
+line_edit = NodePath("Player/Camera3D/SubViewport/Control/VBoxContainer/LineEdit")
+rich_text_label = NodePath("Player/Camera3D/SubViewport/Control/VBoxContainer/RichTextLabel")
 gemini_request = NodePath("GeminiRequest")
-
-[node name="Camera3D" type="Camera3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 1.4944031)
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("Environment_lgngo")
 
-[node name="Sprite3D" type="Sprite3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0.18413866, 1.0278943)
+[node name="GeminiRequest" type="HTTPRequest" parent="."]
+
+[node name="warehouse_fbx" parent="." instance=ExtResource("3_xywc0")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -87, -3, 74)
+
+[node name="StaticBody3D" type="StaticBody3D" parent="."]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="StaticBody3D"]
+transform = Transform3D(75, 0, 0, 0, 50, 0, 0, 0, 50, 37.838573, 0, 0)
+mesh = SubResource("PlaneMesh_gejyx")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="StaticBody3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 37.36499, 0, 0.6480713)
+shape = SubResource("BoxShape3D_5yunf")
+
+[node name="Player" type="CharacterBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.950135, 2.4855423)
+script = ExtResource("5_5yunf")
+
+[node name="Camera3D" type="Camera3D" parent="Player"]
+transform = Transform3D(1, 0, 0, 0, 0.9954496, 0.095289804, 0, -0.095289804, 0.9954496, -0.04103315, 0.6224394, -0.2135055)
+fov = 98.05098
+
+[node name="Low Poly Arm Rig" parent="Player/Camera3D" instance=ExtResource("4_gejyx")]
+transform = Transform3D(0.02, 0, 0, 0, 0.016404664, -0.011440649, 0, 0.011440649, 0.016404664, 0.036432862, -1.0742435, -0.34802318)
+
+[node name="Sprite3D" type="Sprite3D" parent="Player/Camera3D"]
+transform = Transform3D(1, 0, 0, 0, 0.9954496, -0.095289804, 0, 0.095289804, 0.9954496, 0.081061006, -0.0038263798, -1.250196)
 pixel_size = 0.001
 transparent = false
 texture = SubResource("ViewportTexture_ubi47")
 
-[node name="SubViewport" type="SubViewport" parent="."]
-size = Vector2i(1024, 600)
+[node name="SubViewport" type="SubViewport" parent="Player/Camera3D"]
+size = Vector2i(300, 300)
 render_target_update_mode = 4
 
-[node name="Control" parent="SubViewport" instance=ExtResource("2_xywc0")]
+[node name="Control" parent="Player/Camera3D/SubViewport" instance=ExtResource("2_xywc0")]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -48,7 +80,13 @@ offset_bottom = 0.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="GeminiRequest" type="HTTPRequest" parent="."]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Player"]
+shape = SubResource("CapsuleShape3D_5yunf")
+debug_color = Color(0, 0.6, 0.69803923, 0.9411765)
 
-[node name="warehouse_fbx" parent="." instance=ExtResource("3_xywc0")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -87, -3, 74)
+[node name="ShowTimer" type="Timer" parent="."]
+wait_time = 1.5
+one_shot = true
+
+[node name="HideTimer" type="Timer" parent="."]
+one_shot = true
