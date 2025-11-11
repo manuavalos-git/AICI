@@ -1,0 +1,35 @@
+[gd_scene load_steps=4 format=3 uid="uid://br115pitf077c"]
+
+[ext_resource type="PackedScene" uid="uid://biw07ot01r5ib" path="res://assets/panel/panel.glb" id="1_kstio"]
+[ext_resource type="AnimationLibrary" uid="uid://oe52lb6aqtet" path="res://assets/panel/animations.res" id="2_27clu"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_6pqkf"]
+
+[node name="panel" instance=ExtResource("1_kstio")]
+transform = Transform3D(-0.9972875, 0, 0.07360363, 0, 1, 0, -0.07360363, 0, -0.9972875, 0, 0, 0)
+
+[node name="G-Object_011" parent="." index="12"]
+transform = Transform3D(1, 0, 4.359401e-08, 4.3594003e-08, -3.2013427e-09, -1.0000002, 0, 1.0000005, -3.2013414e-09, 0.23255359, 0.08584718, 5.5879354e-09)
+
+[node name="G-Object_018" parent="." index="19"]
+surface_material_override/2 = SubResource("StandardMaterial3D_6pqkf")
+
+[node name="G-Object_020" parent="C-Interruptor 2 posiciones" index="0"]
+transform = Transform3D(1.2527001, 0, 0, 0, 1.2527001, 0, 0, 0, 1.2527, 0.005283579, 0.02151525, 9.119697e-05)
+
+[node name="G-Object_021" parent="C-Interruptor 2 posiciones_001" index="0"]
+transform = Transform3D(1.2100153, -0.32422268, 0, 0.32422268, 1.2100153, 0, 0, 0, 1.2527, 0.0053605884, 0.02159065, 0)
+
+[node name="G-Object_022" parent="C-Interruptor 2 posiciones_002" index="0"]
+transform = Transform3D(1.2100153, -0.32422256, 0, 0.32422256, 1.2100153, 0, 0, 0, 1.2527, 0.005360596, 0.02159065, 0)
+
+[node name="G-Object_023" parent="C-Interruptor 2 posiciones_003" index="0"]
+transform = Transform3D(1.2100153, -0.32422256, 0, 0.32422256, 1.2100153, 0, 0, 0, 1.2527, 0.0052933693, 0.021174282, 0)
+
+[node name="C-Parada de emergencia" parent="." index="40"]
+transform = Transform3D(1.0000002, 0, 0, 0, 1, 0, 0, 0, 1.0000002, 0.07558634, 0.091697924, 0.026414976)
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="." index="57"]
+libraries = {
+&"": ExtResource("2_27clu")
+}

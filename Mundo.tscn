@@ -1,10 +1,11 @@
-[gd_scene load_steps=13 format=3 uid="uid://be0db0gytedhy"]
+[gd_scene load_steps=14 format=3 uid="uid://be0db0gytedhy"]
 
 [ext_resource type="Script" uid="uid://jpmwdaoeoqsu" path="res://Mundo.gd" id="1_ubi47"]
 [ext_resource type="PackedScene" uid="uid://cb54db7iod375" path="res://ChatUI.tscn" id="2_xywc0"]
 [ext_resource type="PackedScene" uid="uid://vg7yt2h1wvhc" path="res://scenery/warehouse_fbx.fbx" id="3_xywc0"]
 [ext_resource type="PackedScene" uid="uid://d1quwsfx0o32u" path="res://player/player.tscn" id="4_gejyx"]
 [ext_resource type="Script" uid="uid://bj1b1dieclvcl" path="res://player/player.gd" id="5_5yunf"]
+[ext_resource type="PackedScene" uid="uid://7s1nbh1ueul3" path="res://panel/panel.tscn" id="6_drrim"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_xwo6f"]
 
@@ -80,6 +81,9 @@ offset_bottom = 0.0
 grow_horizontal = 2
 grow_vertical = 2
 
+[node name="RayCast3D" type="RayCast3D" parent="Player/Camera3D"]
+target_position = Vector3(0, 0, -1.5)
+
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Player"]
 shape = SubResource("CapsuleShape3D_5yunf")
 debug_color = Color(0, 0.6, 0.69803923, 0.9411765)
@@ -90,3 +94,6 @@ one_shot = true
 
 [node name="HideTimer" type="Timer" parent="."]
 one_shot = true
+
+[node name="panel" parent="." instance=ExtResource("6_drrim")]
+transform = Transform3D(0.9746832, 0, 0.22359037, 0, 1, 0, -0.22359037, 0, 0.9746832, 0.44307995, 0.9619762, 0.4611411)
