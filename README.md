@@ -168,7 +168,21 @@ Para agregar nuevos assets industriales:
 4. Implementa la lógica de spawn en `Mundo.gd`
 5. Actualiza `system_prompt_industrial.md` con info del nuevo asset
 
-## 📄 Licencia
+## � Deployment Automático
+
+Este proyecto se despliega automáticamente en GitHub Pages cuando se hace merge a `main`.
+
+### Configuración:
+1. Activa GitHub Pages en: **Settings** → **Pages** → **Source: GitHub Actions**
+2. Haz push a `main` o mergea un PR
+3. El workflow exportará y desplegará automáticamente
+4. URL del sitio: `https://manuavalos-git.github.io/3DAIRE/`
+
+Ver [`DEPLOYMENT.md`](DEPLOYMENT.md) para más detalles.
+
+[![Deploy Status](https://github.com/manuavalos-git/3DAIRE/actions/workflows/deploy-godot.yml/badge.svg)](https://github.com/manuavalos-git/3DAIRE/actions/workflows/deploy-godot.yml)
+
+## �📄 Licencia
 
 Proyecto educativo - Uso libre para aprendizaje
 
