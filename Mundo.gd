@@ -22,7 +22,7 @@ var conversation_history = []
 var screenshot_data = ""
 
 # 🔑 OPENAI API KEY (desde variable de entorno o placeholder)
-var api_key = OS.get_environment("OPENAI_API_KEY") if OS.get_environment("OPENAI_API_KEY") != "" else "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"
+var api_key = "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"
 
 # 🌐 URL de la API de OpenAI (GPT-4 Vision)
 var api_url = "https://api.openai.com/v1/chat/completions"
