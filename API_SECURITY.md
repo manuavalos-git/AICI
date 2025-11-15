@@ -20,7 +20,7 @@ var api_key = "AIzaSyBvjf2jcp_tVENdWBXFY6FWo5Vvc8YTtcY"
 ### Opción 1: Regenerar la API Key (RECOMENDADO)
 
 1. Ve a [Google AI Studio](https://aistudio.google.com/app/apikey)
-2. **Elimina la key actual**: `AIzaSyDwgIreZnegfT7JnY6b91_lHVIOK4RW0WI`
+2. **Elimina la key actual**: `AIzaSyBvjf2jcp_tVENdWBXFY6FWo5Vvc8YTtcY`
 3. Crea una nueva API key
 4. Reemplázala en `Mundo.gd`
 5. **NO SUBAS** el archivo con la key al repositorio público
