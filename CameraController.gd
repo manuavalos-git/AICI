@@ -23,10 +23,10 @@ func _ready():
 func update_status_label():
 	if status_label:
 		if movement_enabled:
-			status_label.text = "🎮 FREE CAM: ACTIVADA\nWASD: Mover | Mouse: Mirar | Espacio: Subir | Shift: Bajar\nCTRL: Desactivar camara | T: Minimizar/Maximizar chat\n💬 CHAT: Click + Arrastra en 3D | Rueda: Zoom | Click en texto para escribir"
+			status_label.text = "🎮 FREE CAM: ACTIVADA\nWASD: Mover | Mouse: Mirar | Espacio: Subir | Shift: Bajar\nCTRL: Desactivar camara | T: Minimizar/Maximizar chat\n💬 CHAT: Click + Arrastra en 3D | Rueda: Zoom | Click en texto para escribir  | C para activar el chat"
 			status_label.modulate = Color.GREEN
 		else:
-			status_label.text = "🎮 FREE CAM: DESACTIVADA\nCTRL para activar | T: Minimizar/Maximizar chat\n💬 CHAT: Click + Arrastra en 3D | Rueda: Zoom | Click en texto para escribir"
+			status_label.text = "🎮 FREE CAM: DESACTIVADA\nCTRL para activar | T: Minimizar/Maximizar chat\n💬 CHAT: Click + Arrastra en 3D | Rueda: Zoom | Click en texto para escribir | C para activar el chat"
 			status_label.modulate = Color.RED
 
 func _input(event):
