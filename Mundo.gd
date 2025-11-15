@@ -21,8 +21,10 @@ var system_prompt = ""
 var conversation_history = []
 var screenshot_data = ""
 
-# 🔑 OPENAI API KEY (desde variable de entorno o placeholder)
-var api_key = OS.get_environment("OPENAI_API_KEY") if OS.get_environment("OPENAI_API_KEY") != "" else "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"
+# 🔑 OPENAI API KEY (desde localStorage del navegador)
+var api_key = ""
+var api_key_configured = false
+var api_key_dialog_shown = false
 
 # 🌐 URL de la API de OpenAI (GPT-4 Vision)
 var api_url = "https://api.openai.com/v1/chat/completions"
@@ -71,6 +73,9 @@ func _ready():
 	# Cargar el system prompt desde el archivo
 	load_system_prompt()
 	
+	# 🔑 Intentar cargar API key desde localStorage (web) o variable de entorno (desktop)
+	load_api_key()
+	
 	# 1. Conectar la UI (esto ya lo tenías)
 	line_edit.text_submitted.connect(_on_text_submitted)
 	
@@ -83,7 +88,52 @@ func _ready():
 	openai_request.request_completed.connect(_on_request_completed)
 	
 	# Mensaje de bienvenida
-	rich_text_label.text = "[color=orange]🏭 Asistente Industrial:[/color] ¡Hola! Soy tu asistente de enseñanza industrial. Puedo ayudarte a aprender sobre herramientas, maquinaria y equipos industriales.\n\n💡 Comandos especiales:\n- Escribe 'ver' o 'captura' para que vea lo que estás viendo en el simulador\n- Pregúntame sobre cualquier herramienta o equipo industrial\n- Pídeme que te muestre objetos 3D\n\n¿En qué puedo ayudarte?"
+	show_welcome_message()
+
+# 🔑 Cargar API key desde localStorage (web) o variable de entorno (desktop)
+func load_api_key():
+	# Prioridad 1: Intentar cargar desde localStorage (web)
+	if OS.has_feature("web"):
+		var js_code = "localStorage.getItem('openai_api_key') || ''"
+		api_key = JavaScriptBridge.eval(js_code)
+		if api_key != "" and api_key != "null":
+			api_key_configured = true
+			print("🔑 API key cargada desde localStorage")
+		else:
+			print("⚠️ No hay API key en localStorage")
+	else:
+		# Prioridad 2: Variable de entorno (desktop)
+		var env_key = OS.get_environment("OPENAI_API_KEY")
+		if env_key != "":
+			api_key = env_key
+			api_key_configured = true
+			print("🔑 API key cargada desde variable de entorno")
+		else:
+			print("⚠️ No hay API key en variable de entorno")
+
+# 💾 Guardar API key en localStorage (solo web)
+func save_api_key(key: String):
+	if OS.has_feature("web"):
+		var js_code = "localStorage.setItem('openai_api_key', '" + key + "')"
+		JavaScriptBridge.eval(js_code)
+		print("💾 API key guardada en localStorage")
+	api_key = key
+	api_key_configured = true
+
+# 🗑️ Eliminar API key
+func clear_api_key():
+	if OS.has_feature("web"):
+		JavaScriptBridge.eval("localStorage.removeItem('openai_api_key')")
+	api_key = ""
+	api_key_configured = false
+	print("🗑️ API key eliminada")
+
+# 📝 Mostrar mensaje de bienvenida
+func show_welcome_message():
+	if api_key_configured:
+		rich_text_label.text = "[color=orange]🏭 Asistente Industrial:[/color] ¡Hola! Soy tu asistente de enseñanza industrial.\n\n💡 Puedo ayudarte con:\n- Explicaciones sobre herramientas y equipos\n- Insertar objetos 3D en el simulador\n- Responder preguntas técnicas\n\n¿En qué puedo ayudarte?"
+	else:
+		rich_text_label.text = "[color=yellow]⚠️ API Key Requerida[/color]\n\nPara usar el asistente, necesitas una API key de OpenAI.\n\n📋 [color=lightblue]Pasos:[/color]\n1. Ve a: [color=cyan]https://platform.openai.com/api-keys[/color]\n2. Crea una cuenta (gratis)\n3. Genera una API key\n4. Escribe: [color=green]/setkey tu-api-key-aqui[/color]\n\n💡 Tu key se guardará localmente en tu navegador."
 
 func load_system_prompt():
 	var file_path = "res://system_prompt_industrial.md"
@@ -107,6 +157,30 @@ func _on_text_submitted(text):
 	rich_text_label.text += "\n[color=lightblue]Tú:[/color] " + text
 	line_edit.text = ""
 	line_edit.grab_focus()  # ✅ Mantener foco después de enviar
+	
+	# 🔑 Comando especial: /setkey para configurar API key
+	if text.begins_with("/setkey "):
+		var new_key = text.substr(8).strip_edges()
+		if new_key.length() > 20:  # Validación básica
+			save_api_key(new_key)
+			rich_text_label.text += "\n[color=green]✅ API key configurada correctamente![/color]\n\n" + \
+				"[color=orange]Bot:[/color] Ahora puedes usar el asistente. ¿En qué puedo ayudarte?"
+		else:
+			rich_text_label.text += "\n[color=red]❌ Error: API key inválida (muy corta)[/color]"
+		return
+	
+	# 🔑 Comando especial: /clearkey para eliminar API key
+	if text == "/clearkey":
+		clear_api_key()
+		rich_text_label.text += "\n[color=yellow]🗑️ API key eliminada[/color]"
+		show_welcome_message()
+		return
+	
+	# 🚫 Verificar que haya API key configurada
+	if not api_key_configured or api_key == "":
+		rich_text_label.text += "\n[color=red]❌ Error: No hay API key configurada[/color]\n\n" + \
+			"Usa el comando: [color=green]/setkey tu-api-key-aqui[/color]"
+		return
 	
 	# 🧠 CAPTURA INTELIGENTE: Siempre capturar (GPT-4o decide si la usa)
 	rich_text_label.text += "\n[color=orange]Bot:[/color] Pensando..."
