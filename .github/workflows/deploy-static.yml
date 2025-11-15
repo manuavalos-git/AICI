@@ -18,7 +18,7 @@ concurrency:
 jobs:
   deploy-static:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: 📥 Checkout Repository
         uses: actions/checkout@v4
@@ -29,7 +29,7 @@ jobs:
           echo "🔍 Checking Pre-built Godot Export Files"
           echo "═══════════════════════════════════════════════════════"
           echo ""
-          
+
           REQUIRED_FILES=(
             "GodotAI.html"
             "GodotAI.js"
@@ -40,9 +40,9 @@ jobs:
             "GodotAI.apple-touch-icon.png"
             "GodotAI.audio.worklet.js"
           )
-          
+
           ALL_PRESENT=true
-          
+
           for file in "${REQUIRED_FILES[@]}"; do
             if [ -f "$file" ]; then
               SIZE=$(du -h "$file" | cut -f1)
@@ -52,9 +52,9 @@ jobs:
               ALL_PRESENT=false
             fi
           done
-          
+
           echo ""
-          
+
           if [ "$ALL_PRESENT" = false ]; then
             echo "⚠️  ERROR: Some pre-built files are missing!"
             echo "Please export from Godot locally first:"
@@ -64,7 +64,7 @@ jobs:
             echo "   4. Commit the exported files"
             exit 1
           fi
-          
+
           echo "✅ All pre-built files present!"
           echo ""
           echo "📊 Total Size:"
@@ -75,10 +75,10 @@ jobs:
       - name: 📁 Prepare Deployment Directory
         run: |
           mkdir -p deploy
-          
+
           # Copy all Godot export files
           cp GodotAI.* deploy/ 2>/dev/null || true
-          
+
           echo "Copied files to deploy directory:"
           ls -lh deploy/
 
@@ -139,7 +139,7 @@ jobs:
           </body>
           </html>
           EOF
-          
+
           echo "✅ index.html redirect created"
 
       - name: 🔒 Create CORS Headers for WebAssembly
@@ -151,18 +151,18 @@ jobs:
             Cross-Origin-Opener-Policy: same-origin
             Access-Control-Allow-Origin: *
             Cache-Control: public, max-age=3600
-          
+
           # Cache static assets longer
           /*.wasm
             Cache-Control: public, max-age=31536000, immutable
-          
+
           /*.js
             Cache-Control: public, max-age=31536000, immutable
-          
+
           /*.pck
             Cache-Control: public, max-age=31536000, immutable
           EOF
-          
+
           echo "✅ _headers file created with CORS and caching rules"
 
       - name: 📊 Deployment Summary

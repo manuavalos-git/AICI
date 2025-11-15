@@ -27,6 +27,14 @@ var api_key = "AIzaSyDwgIreZnegfT7JnY6b91_lHVIOK4RW0WI"
 # La URL de la API de Gemini Vision (2.0 flash soporta imágenes)
 var api_url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=" + api_key
 
+# 🆕 RATE LIMITING: Control de peticiones
+var request_queue = []  # Cola de peticiones pendientes
+var last_request_time = 0.0  # Última vez que enviamos una petición
+var MIN_REQUEST_INTERVAL = 4.5  # Segundos entre peticiones (15 RPM = 1 cada 4s, usamos 4.5 para margen)
+var is_processing_request = false  # Si estamos procesando una petición
+var retry_count = 0  # Contador de reintentos
+var MAX_RETRIES = 3  # Máximo de reintentos
+
 # --- NUEVO: referencia al AssetManager ---
 @onready var asset_manager = $AssetManager
 
@@ -146,7 +154,8 @@ func _on_text_submitted(text):
 	var body_json = JSON.stringify(body)
 	var headers = ["Content-Type: application/json"]
 
-	gemini_request.request(api_url, headers, HTTPClient.METHOD_POST, body_json)
+	# 🆕 NUEVO: Encolar petición en lugar de enviar directamente
+	queue_gemini_request(body_json, headers)
 
 
 
@@ -167,12 +176,93 @@ func take_screenshot():
 	print("📸 Captura tomada: ", screenshot_data.length(), " caracteres en base64")
 
 
-# --- 3. NUEVA FUNCIÓN ---
+# 🆕 NUEVA FUNCIÓN: Encolar peticiones para rate limiting
+func queue_gemini_request(body_json: String, headers: Array):
+	request_queue.append({"body": body_json, "headers": headers})
+	
+	var queue_size = request_queue.size()
+	if queue_size > 1:
+		rich_text_label.text = rich_text_label.text.replace("Pensando...", 
+			"En cola... (posición " + str(queue_size) + ")")
+		print("⏳ Petición encolada. Cola: ", queue_size)
+	
+	# Si no estamos procesando, iniciar procesamiento
+	if not is_processing_request:
+		process_request_queue()
+
+
+# 🆕 NUEVA FUNCIÓN: Procesar la cola con rate limiting
+func process_request_queue():
+	if request_queue.is_empty():
+		is_processing_request = false
+		return
+	
+	is_processing_request = true
+	
+	# Calcular cuánto tiempo ha pasado desde la última petición
+	var current_time = Time.get_ticks_msec() / 1000.0
+	var time_since_last = current_time - last_request_time
+	
+	# Si no ha pasado suficiente tiempo, esperar
+	if time_since_last < MIN_REQUEST_INTERVAL:
+		var wait_time = MIN_REQUEST_INTERVAL - time_since_last
+		print("⏱️ Esperando %.1f segundos para respetar rate limit (15 RPM)..." % wait_time)
+		
+		# Mostrar countdown al usuario
+		for i in range(int(wait_time) + 1):
+			if i < wait_time:
+				rich_text_label.text = rich_text_label.text.replace(
+					"Pensando...", 
+					"⏳ Esperando %d segundos... (límite API)" % int(wait_time - i)
+				)
+				rich_text_label.text = rich_text_label.text.replace(
+					RegEx.new().compile("⏳ Esperando \\d+ segundos").search(rich_text_label.text).get_string() if RegEx.new().compile("⏳ Esperando \\d+ segundos").search(rich_text_label.text) else "",
+					"⏳ Esperando %d segundos... (límite API)" % int(wait_time - i)
+				)
+				await get_tree().create_timer(1.0).timeout
+	
+	# Enviar la siguiente petición de la cola
+	var request_data = request_queue.pop_front()
+	last_request_time = Time.get_ticks_msec() / 1000.0
+	retry_count = 0  # Resetear contador de reintentos
+	
+	print("🚀 Enviando petición a Gemini API...")
+	gemini_request.request(api_url, request_data.headers, HTTPClient.METHOD_POST, request_data.body)
+
+
+# --- 3. FUNCIÓN MODIFICADA ---
 # Esta función se llama AUTOMÁTICAMENTE cuando la API responde
 func _on_request_completed(result, response_code, headers, body):
+	# 🆕 MANEJO DE ERROR 429 (Rate Limit)
+	if response_code == 429:
+		retry_count += 1
+		if retry_count <= MAX_RETRIES:
+			var retry_wait = MIN_REQUEST_INTERVAL * pow(2, retry_count - 1)  # Backoff exponencial
+			rich_text_label.text += "\n[color=yellow]⚠️ Límite de API excedido. Reintentando en %.0f segundos... (intento %d/%d)[/color]" % [retry_wait, retry_count, MAX_RETRIES]
+			print("⚠️ Error 429: Rate limit. Reintentando en %.1f segundos..." % retry_wait)
+			
+			await get_tree().create_timer(retry_wait).timeout
+			
+			# Re-encolar la última petición
+			if not request_queue.is_empty():
+				var last_request = request_queue.pop_front()
+				request_queue.push_front(last_request)
+			
+			process_request_queue()
+		else:
+			rich_text_label.text += "\n[color=red]❌ Error: Límite de API excedido. Por favor espera 1 minuto antes de intentar nuevamente.[/color]"
+			print("❌ Máximo de reintentos alcanzado. Rate limit excedido.")
+			retry_count = 0
+			is_processing_request = false
+			process_request_queue()  # Continuar con la siguiente petición
+		return
+	
+	# Otros errores HTTP
 	if response_code != 200:
 		rich_text_label.text += "\n[color=red]Error:[/color] No se pudo conectar. Código: " + str(response_code)
 		print("Error de API: ", body.get_string_from_utf8())
+		is_processing_request = false
+		process_request_queue()  # Continuar con la siguiente petición
 		return
 
 	var response_text = body.get_string_from_utf8()
@@ -204,13 +294,16 @@ func _on_request_completed(result, response_code, headers, body):
 		# Si contiene 'action', interpretamos como comando
 		if parsed.has("action"):
 			handleBotAction(parsed)
-			return
 		else:
 			# Si no hay acción, mostramos texto normal
 			rich_text_label.text += "\n[color=orange]Bot:[/color] " + bot_response
 	else:
 		rich_text_label.text += "\n[color=red]Error:[/color] La API devolvió una respuesta vacía."
 		print("Respuesta vacía o bloqueada: ", response_text)
+	
+	# 🆕 Procesar siguiente petición en la cola
+	is_processing_request = false
+	process_request_queue()
 
 # Funciones para manejar el focus del chat
 func _on_line_edit_focus_entered():
