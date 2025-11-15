@@ -168,13 +168,13 @@ Para agregar nuevos assets industriales:
 4. Implementa la lógica de spawn en `Mundo.gd`
 5. Actualiza `system_prompt_industrial.md` con info del nuevo asset
 
-## � Deployment Automático
+## 🚀 Deployment Automático
 
-Este proyecto se despliega automáticamente en GitHub Pages cuando se hace merge a `main`.
+Este proyecto se despliega automáticamente en GitHub Pages cuando se hace merge a `master`.
 
 ### Configuración:
 1. Activa GitHub Pages en: **Settings** → **Pages** → **Source: GitHub Actions**
-2. Haz push a `main` o mergea un PR
+2. Haz push a `master` o mergea un PR
 3. El workflow exportará y desplegará automáticamente
 4. URL del sitio: `https://manuavalos-git.github.io/3DAIRE/`
 

@@ -5,7 +5,7 @@ Este proyecto se despliega automáticamente en GitHub Pages usando GitHub Action
 ## 🚀 Proceso de Deployment
 
 1. Haz cambios en tu rama
-2. Crea un Pull Request a `main`
+2. Crea un Pull Request a `master`
 3. Una vez aprobado y mergeado:
    - GitHub Actions exporta el proyecto Godot a Web automáticamente
    - Se despliega en GitHub Pages
@@ -36,8 +36,8 @@ Para proteger tu API key de Gemini, puedes usar GitHub Secrets:
 ## ⚡ Triggers del Workflow
 
 El deployment se ejecuta cuando:
-- Se hace push a la rama `main`
-- Se mergea un Pull Request a `main`
+- Se hace push a la rama `master`
+- Se mergea un Pull Request a `master`
 - Manualmente desde la pestaña "Actions" en GitHub
 
 ## 🐛 Troubleshooting

@@ -2,9 +2,9 @@ name: Deploy Godot to GitHub Pages
 
 on:
   push:
-    branches: [ main ]
+    branches: [ master ]
   pull_request:
-    branches: [ main ]
+    branches: [ master ]
   workflow_dispatch:
 
 permissions:
@@ -19,28 +19,28 @@ concurrency:
 jobs:
   export-and-deploy:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: 📥 Checkout Repository
         uses: actions/checkout@v4
         with:
           lfs: true
-      
+
       - name: 🎮 Setup Godot
         uses: chickensoft-games/setup-godot@v1
         with:
           version: 4.3.0
           use-dotnet: false
           include-templates: true
-      
+
       - name: 🔍 Verify Godot Installation
         run: godot --version
-      
+
       - name: 📦 Export to Web
         run: |
           mkdir -p build/web
           godot --headless --export-release "Web" build/web/index.html
-      
+
       - name: 📝 Create Netlify Headers (CORS for WebAssembly)
         run: |
           cat > build/web/_headers << 'EOF'
@@ -49,19 +49,19 @@ jobs:
             Cross-Origin-Opener-Policy: same-origin
             Access-Control-Allow-Origin: *
           EOF
-      
+
       - name: 🌐 Setup GitHub Pages
         uses: actions/configure-pages@v4
-      
+
       - name: 📤 Upload Artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: './build/web'
-      
+          path: "./build/web"
+
       - name: 🚀 Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
-      
+
       - name: ✅ Deployment Complete
         run: |
           echo "🎉 Deployed successfully!"

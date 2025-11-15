@@ -23,11 +23,11 @@ git remote add origin https://github.com/manuavalos-git/3DAIRE.git
 # Si ya existe el remote, actualízalo:
 # git remote set-url origin https://github.com/manuavalos-git/3DAIRE.git
 
-# Cambia a la rama main
-git branch -M main
+# Cambia a la rama master
+git branch -M master
 
 # Push a GitHub
-git push -u origin main
+git push -u origin master
 ```
 
 ### Opción B: Usando GitHub Desktop
@@ -67,7 +67,7 @@ git push -u origin main
 
 ```mermaid
 graph LR
-    A[Push a main] --> B[GitHub Actions]
+    A[Push a master] --> B[GitHub Actions]
     B --> C[Export Godot a Web]
     C --> D[Deploy a GitHub Pages]
     D --> E[Sitio Público]
@@ -83,7 +83,7 @@ Cada vez que hagas cambios:
 
 git add .
 git commit -m "Descripción de los cambios"
-git push origin main
+git push origin master
 
 # ¡Eso es todo! GitHub Actions hará el resto automáticamente
 ```
@@ -147,7 +147,7 @@ Puedes ver el estado del deployment en cualquier momento:
 
 ## 🎉 ¡Listo!
 
-Una vez configurado, cada commit a `main` desplegará automáticamente tu simulador. 
+Una vez configurado, cada commit a `master` desplegará automáticamente tu simulador. 
 
 **URL de tu sitio**: https://manuavalos-git.github.io/3DAIRE/
 
