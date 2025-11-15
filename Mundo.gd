@@ -6,8 +6,8 @@ extends Node3D
 @export var sub_viewport_node: SubViewport
 @export var chat_ui: Control  # Nueva referencia al ChatUI
 
-# ¡NUEVA VARIABLE!
-@export var gemini_request: HTTPRequest
+# ¡NUEVA VARIABLE! - OpenAI HTTPRequest
+@export var openai_request: HTTPRequest
 @onready var sprite = $Sprite3D
 @onready var camera = $Camera3D
 @onready var camera_controller = $Camera3D  # Referencia al script de la cámara
@@ -21,19 +21,17 @@ var system_prompt = ""
 var conversation_history = []
 var screenshot_data = ""
 
-# ¡TU API KEY! (Conseguila en Google AI Studio)
-var api_key = "AIzaSyBvjf2jcp_tVENdWBXFY6FWo5Vvc8YTtcY"
+# 🔑 OPENAI API KEY (desde variable de entorno o placeholder)
+var api_key = OS.get_environment("OPENAI_API_KEY") if OS.get_environment("OPENAI_API_KEY") != "" else "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"
 
-# La URL de la API de Gemini Vision (2.0 flash soporta imágenes)
-var api_url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=" + api_key
+# 🌐 URL de la API de OpenAI (GPT-4 Vision)
+var api_url = "https://api.openai.com/v1/chat/completions"
 
-# 🆕 RATE LIMITING: Control de peticiones
-var request_queue = []  # Cola de peticiones pendientes
-var last_request_time = 0.0  # Última vez que enviamos una petición
-var MIN_REQUEST_INTERVAL = 4.5  # Segundos entre peticiones (15 RPM = 1 cada 4s, usamos 4.5 para margen)
-var is_processing_request = false  # Si estamos procesando una petición
-var retry_count = 0  # Contador de reintentos
-var MAX_RETRIES = 3  # Máximo de reintentos
+# 🔒 CONTROL DE PETICIONES: Una a la vez (no queue system)
+var is_processing_request = false  # Simple boolean lock
+var retry_count = 0
+var MAX_RETRIES = 3
+var current_request_data = null  # Para reintentos si falla
 
 # --- NUEVO: referencia al AssetManager ---
 @onready var asset_manager = $AssetManager
@@ -80,10 +78,9 @@ func _ready():
 	line_edit.focus_entered.connect(_on_line_edit_focus_entered)
 	line_edit.focus_exited.connect(_on_line_edit_focus_exited)
 	
-	# 2. ¡NUEVA CONEXIÓN!
+	# 2. ¡CONEXIÓN OPENAI!
 	# Conectamos la señal de "request_completed" del nodo HTTPRequest
-	# a una nueva función que crearemos.
-	gemini_request.request_completed.connect(_on_request_completed)
+	openai_request.request_completed.connect(_on_request_completed)
 	
 	# Mensaje de bienvenida
 	rich_text_label.text = "[color=orange]🏭 Asistente Industrial:[/color] ¡Hola! Soy tu asistente de enseñanza industrial. Puedo ayudarte a aprender sobre herramientas, maquinaria y equipos industriales.\n\n💡 Comandos especiales:\n- Escribe 'ver' o 'captura' para que vea lo que estás viendo en el simulador\n- Pregúntame sobre cualquier herramienta o equipo industrial\n- Pídeme que te muestre objetos 3D\n\n¿En qué puedo ayudarte?"
@@ -105,57 +102,81 @@ func load_system_prompt():
 		+ "Ejemplo: {\"action\":\"insert\",\"asset\":\"fresadora\"}"
 
 
-# --- 2. FUNCIÓN MODIFICADA ---
+# --- 2. FUNCIÓN MODIFICADA - ALWAYS CAPTURE ---
 func _on_text_submitted(text):
 	rich_text_label.text += "\n[color=lightblue]Tú:[/color] " + text
 	line_edit.text = ""
-
-	# Detectar si hay que hacer captura
-	var needs_screenshot = false
-	var text_lower = text.to_lower()
-	if "ver" in text_lower or "captura" in text_lower or "mira" in text_lower or "observa" in text_lower or "qué ves" in text_lower or "que ves" in text_lower:
-		needs_screenshot = true
-		rich_text_label.text += "\n[color=yellow]📸 Capturando pantalla...[/color]"
-
+	line_edit.grab_focus()  # ✅ Mantener foco después de enviar
+	
+	# 🧠 CAPTURA INTELIGENTE: Siempre capturar (GPT-4o decide si la usa)
 	rich_text_label.text += "\n[color=orange]Bot:[/color] Pensando..."
-
-	if needs_screenshot:
-		await take_screenshot()
-
-	# Construir el mensaje del usuario
-	var user_parts = []
-	if needs_screenshot and screenshot_data != "":
-		user_parts.append({
-			"inline_data": {
-				"mime_type": "image/png",
-				"data": screenshot_data
-			}
+	
+	# Siempre tomar captura para contexto visual
+	await take_screenshot()
+	
+	# 🚫 Bloquear si ya hay una petición en curso
+	if is_processing_request:
+		rich_text_label.text = rich_text_label.text.replace("Pensando...", 
+			"⚠️ Esperando respuesta anterior...")
+		print("⚠️ Petición bloqueada: Ya hay una en proceso")
+		return
+	
+	is_processing_request = true
+	
+	# 🌐 Construir mensaje OpenAI (formato chat/completions)
+	var messages = [{"role": "system", "content": system_prompt}]
+	
+	# Siempre incluir captura de pantalla para contexto visual
+	if screenshot_data != "":
+		print("🖼️ Agregando imagen al mensaje (", screenshot_data.length(), " chars)")
+		messages.append({
+			"role": "user",
+			"content": [
+				{"type": "text", "text": text},
+				{
+					"type": "image_url", 
+					"image_url": {
+						"url": "data:image/png;base64," + screenshot_data,
+						"detail": "high"
+					}
+				}
+			]
 		})
-	user_parts.append({"text": text})
-
-	var body = {
-		"system_instruction": {"parts": [{"text": system_prompt}]},
-		"contents": [{"role": "user", "parts": user_parts}]
-	}
-
-	# --- 🔥 NUEVO BLOQUE: decidir si pedir JSON o texto ---
-	var force_json = false
-	var keywords = ["insertar", "crear", "agregar", "mostrar", "colocar", "poner"]
-	for word in keywords:
-		if word in text_lower:
-			force_json = true
-			break
-
-	if force_json:
-		body["generation_config"] = {"response_mime_type": "application/json"}
 	else:
-		body["generation_config"] = {"response_mime_type": "text/plain"}
-
+		messages.append({"role": "user", "content": text})
+	
+	var body = {
+		"model": "gpt-4o-2024-08-06",
+		"messages": messages,
+		"max_tokens": 1000
+	}
+	
 	var body_json = JSON.stringify(body)
-	var headers = ["Content-Type: application/json"]
-
-	# 🆕 NUEVO: Encolar petición en lugar de enviar directamente
-	queue_gemini_request(body_json, headers)
+	var headers = [
+		"Content-Type: application/json",
+		"Authorization: Bearer " + api_key
+	]
+	
+	# 📊 Enhanced logging
+	print("\n============================================================")
+	print("📤 ENVIANDO REQUEST A OPENAI")
+	print("============================================================")
+	print("🌐 URL: ", api_url)
+	print("📋 Headers: ", headers)
+	
+	var has_image = body_json.find("image_url") != -1
+	var has_base64 = body_json.find("data:image/png;base64,") != -1
+	print("🖼️ Contiene imagen: ", "SÍ ✅" if has_image else "NO ❌")
+	print("📊 Tamaño del body: ", body_json.length(), " caracteres")
+	if has_base64:
+		var image_start = body_json.find("data:image/png;base64,")
+		print("📸 Base64 encontrado en posición: ", image_start)
+	
+	print("📦 Body (primeros 500 chars): ", body_json.substr(0, 500))
+	print("============================================================")
+	print("(2) ")
+	
+	send_openai_request(body_json, headers)
 
 
 
@@ -176,134 +197,107 @@ func take_screenshot():
 	print("📸 Captura tomada: ", screenshot_data.length(), " caracteres en base64")
 
 
-# 🆕 NUEVA FUNCIÓN: Encolar peticiones para rate limiting
-func queue_gemini_request(body_json: String, headers: Array):
-	request_queue.append({"body": body_json, "headers": headers})
+# 📡 Enviar request a OpenAI
+func send_openai_request(body_json: String, headers: Array):
+	current_request_data = {"body": body_json, "headers": headers}
+	var error = openai_request.request(api_url, headers, HTTPClient.METHOD_POST, body_json)
 	
-	var queue_size = request_queue.size()
-	if queue_size > 1:
+	if error != OK:
+		print("❌ Error al enviar request: ", error)
 		rich_text_label.text = rich_text_label.text.replace("Pensando...", 
-			"En cola... (posición " + str(queue_size) + ")")
-		print("⏳ Petición encolada. Cola: ", queue_size)
-	
-	# Si no estamos procesando, iniciar procesamiento
-	if not is_processing_request:
-		process_request_queue()
-
-
-# 🆕 NUEVA FUNCIÓN: Procesar la cola con rate limiting
-func process_request_queue():
-	if request_queue.is_empty():
+			"Error al enviar mensaje ❌")
 		is_processing_request = false
-		return
-	
-	is_processing_request = true
-	
-	# Calcular cuánto tiempo ha pasado desde la última petición
-	var current_time = Time.get_ticks_msec() / 1000.0
-	var time_since_last = current_time - last_request_time
-	
-	# Si no ha pasado suficiente tiempo, esperar
-	if time_since_last < MIN_REQUEST_INTERVAL:
-		var wait_time = MIN_REQUEST_INTERVAL - time_since_last
-		print("⏱️ Esperando %.1f segundos para respetar rate limit (15 RPM)..." % wait_time)
-		
-		# Mostrar countdown al usuario
-		for i in range(int(wait_time) + 1):
-			if i < wait_time:
-				rich_text_label.text = rich_text_label.text.replace(
-					"Pensando...", 
-					"⏳ Esperando %d segundos... (límite API)" % int(wait_time - i)
-				)
-				rich_text_label.text = rich_text_label.text.replace(
-					RegEx.new().compile("⏳ Esperando \\d+ segundos").search(rich_text_label.text).get_string() if RegEx.new().compile("⏳ Esperando \\d+ segundos").search(rich_text_label.text) else "",
-					"⏳ Esperando %d segundos... (límite API)" % int(wait_time - i)
-				)
-				await get_tree().create_timer(1.0).timeout
-	
-	# Enviar la siguiente petición de la cola
-	var request_data = request_queue.pop_front()
-	last_request_time = Time.get_ticks_msec() / 1000.0
-	retry_count = 0  # Resetear contador de reintentos
-	
-	print("🚀 Enviando petición a Gemini API...")
-	gemini_request.request(api_url, request_data.headers, HTTPClient.METHOD_POST, request_data.body)
 
 
 # --- 3. FUNCIÓN MODIFICADA ---
 # Esta función se llama AUTOMÁTICAMENTE cuando la API responde
 func _on_request_completed(result, response_code, headers, body):
-	# 🆕 MANEJO DE ERROR 429 (Rate Limit)
-	if response_code == 429:
-		retry_count += 1
-		if retry_count <= MAX_RETRIES:
-			var retry_wait = MIN_REQUEST_INTERVAL * pow(2, retry_count - 1)  # Backoff exponencial
-			rich_text_label.text += "\n[color=yellow]⚠️ Límite de API excedido. Reintentando en %.0f segundos... (intento %d/%d)[/color]" % [retry_wait, retry_count, MAX_RETRIES]
-			print("⚠️ Error 429: Rate limit. Reintentando en %.1f segundos..." % retry_wait)
-			
-			await get_tree().create_timer(retry_wait).timeout
-			
-			# Re-encolar la última petición
-			if not request_queue.is_empty():
-				var last_request = request_queue.pop_front()
-				request_queue.push_front(last_request)
-			
-			process_request_queue()
-		else:
-			rich_text_label.text += "\n[color=red]❌ Error: Límite de API excedido. Por favor espera 1 minuto antes de intentar nuevamente.[/color]"
-			print("❌ Máximo de reintentos alcanzado. Rate limit excedido.")
-			retry_count = 0
-			is_processing_request = false
-			process_request_queue()  # Continuar con la siguiente petición
-		return
+	print("\n============================================================")
+	print("📥 RESPUESTA RECIBIDA DE OPENAI")
+	print("============================================================")
+	print("📊 Result Code: ", result)
+	print("🔢 HTTP Status: ", response_code)
+	print("📋 Headers: ", headers)
 	
-	# Otros errores HTTP
-	if response_code != 200:
-		rich_text_label.text += "\n[color=red]Error:[/color] No se pudo conectar. Código: " + str(response_code)
-		print("Error de API: ", body.get_string_from_utf8())
-		is_processing_request = false
-		process_request_queue()  # Continuar con la siguiente petición
-		return
-
 	var response_text = body.get_string_from_utf8()
-	var json_data = JSON.parse_string(response_text)
-
-	if json_data == null:
-		rich_text_label.text += "\n[color=red]Error:[/color] Respuesta inválida del servidor."
-		print("Respuesta inválida: ", response_text)
-		return
-
-	if json_data.get("candidates") and json_data.candidates[0].get("content"):
-		var bot_response = json_data.candidates[0].content.parts[0].text
-		print("🧠 Respuesta cruda de Gemini:\n", bot_response)
-
-		# Intentar parsear JSON si la respuesta del bot es estructurada
-		var parsed = {}
-		var clean_response = bot_response.strip_edges()
-
-		# Buscar un bloque JSON dentro de la respuesta aunque tenga texto adicional
-		var json_start = clean_response.find("{")
-		var json_end = clean_response.rfind("}")
-		if json_start != -1 and json_end != -1:
-			var json_substring = clean_response.substr(json_start, json_end - json_start + 1)
-			var parsed_json = JSON.parse_string(json_substring)
-			if typeof(parsed_json) == TYPE_DICTIONARY:
-				parsed = parsed_json
-
-
-		# Si contiene 'action', interpretamos como comando
-		if parsed.has("action"):
-			handleBotAction(parsed)
-		else:
-			# Si no hay acción, mostramos texto normal
-			rich_text_label.text += "\n[color=orange]Bot:[/color] " + bot_response
-	else:
-		rich_text_label.text += "\n[color=red]Error:[/color] La API devolvió una respuesta vacía."
-		print("Respuesta vacía o bloqueada: ", response_text)
+	print("📦 Body: ", response_text)
+	print("============================================================\n")
 	
-	# 🆕 Procesar siguiente petición en la cola
+	# 🆕 MANEJO DE ERRORES
+	if response_code == 429:
+		rich_text_label.text += "\n[color=yellow]⚠️ Límite de API excedido. Espera unos segundos...[/color]"
+		print("⚠️ Error 429: Rate limit excedido")
+		is_processing_request = false
+		return
+	
+	if response_code == 401:
+		rich_text_label.text += "\n[color=red]❌ Error de autenticación. Verifica tu API key.[/color]"
+		print("❌ Error 401: API key inválida")
+		is_processing_request = false
+		return
+	
+	if response_code != 200:
+		rich_text_label.text = rich_text_label.text.replace("Pensando...", 
+			"Error: Código " + str(response_code) + " ❌")
+		print("Error de API: ", response_text)
+		is_processing_request = false
+		return
+	
+	# Parsear respuesta JSON
+	var json_data = JSON.parse_string(response_text)
+	
+	if json_data == null or not json_data.has("choices"):
+		rich_text_label.text = rich_text_label.text.replace("Pensando...", 
+			"Error: Respuesta inválida ❌")
+		print("❌ Respuesta inválida de OpenAI")
+		is_processing_request = false
+		return
+	
+	# Extraer respuesta del bot
+	var bot_response = json_data.choices[0].message.content
+	print("🧠 Respuesta cruda de OpenAI:\n", bot_response)
+	
+	# Intentar parsear JSON si la respuesta es estructurada
+	var parsed = {}
+	var clean_response = bot_response.strip_edges()
+	
+	# Buscar bloque JSON (puede estar en ```json o sin markdown)
+	var json_substring = clean_response
+	if "```json" in clean_response:
+		var json_start = clean_response.find("```json") + 7
+		var json_end = clean_response.find("```", json_start)
+		if json_end != -1:
+			json_substring = clean_response.substr(json_start, json_end - json_start).strip_edges()
+	elif "```" in clean_response:
+		var json_start = clean_response.find("```") + 3
+		var json_end = clean_response.find("```", json_start)
+		if json_end != -1:
+			json_substring = clean_response.substr(json_start, json_end - json_start).strip_edges()
+	
+	# Intentar parsear como JSON
+	var json_start = json_substring.find("{")
+	var json_end = json_substring.rfind("}")
+	if json_start != -1 and json_end != -1:
+		var json_only = json_substring.substr(json_start, json_end - json_start + 1)
+		var parsed_json = JSON.parse_string(json_only)
+		if typeof(parsed_json) == TYPE_DICTIONARY:
+			parsed = parsed_json
+	
+	# Si contiene 'action', interpretar como comando
+	if parsed.has("action"):
+		handleBotAction(parsed)
+		rich_text_label.text = rich_text_label.text.replace("Pensando...", "")
+	else:
+		# Mostrar texto normal
+		rich_text_label.text = rich_text_label.text.replace("Pensando...", bot_response)
+	
+	# ✅ Desbloquear para permitir nuevas peticiones
+	current_request_data = null
 	is_processing_request = false
-	process_request_queue()
+	
+	# 🔄 Devolver el foco al chat para continuar conversación
+	if line_edit and not line_edit.has_focus():
+		line_edit.grab_focus()
 
 # Funciones para manejar el focus del chat
 func _on_line_edit_focus_entered():
@@ -406,16 +400,32 @@ func _input(event):
 
 # --- NUEVO: manejar acciones del bot ---
 func handleBotAction(parsed: Dictionary):
-	print("handleBotAction")
+	print("🎬 handleBotAction:", parsed)
+	
 	if parsed.has("action") and parsed.action == "insert":
-		var asset_name = parsed.get("asset", "")
-		if asset_name != "":
-			insertAsset(asset_name)
+		var assets_to_insert = []
+		
+		# Soportar asset único (string o array)
+		if parsed.has("asset"):
+			var asset_value = parsed.get("asset")
+			if typeof(asset_value) == TYPE_STRING and asset_value != "":
+				assets_to_insert.append(asset_value)
+			elif typeof(asset_value) == TYPE_ARRAY:
+				assets_to_insert = asset_value
+		
+		# También soportar "assets" (plural, array)
+		if parsed.has("assets") and typeof(parsed.assets) == TYPE_ARRAY:
+			assets_to_insert = parsed.assets
+		
+		# Insertar todos los assets
+		if assets_to_insert.size() > 0:
+			for asset_name in assets_to_insert:
+				insertAsset(asset_name)
 		else:
-			print("No se indicó asset")
-			rich_text_label.text += "\n[color=red]Error:[/color] No se indicó asset."
+			rich_text_label.text += "\n[color=red]Error:[/color] No se indicaron assets."
+	
 	elif parsed.has("action") and parsed.action == "say":
-		var msg = parsed.get("asset", "ok")
+		var msg = parsed.get("message", "ok")
 		rich_text_label.text += "\n[color=orange]Bot:[/color] " + msg
 	else:
 		rich_text_label.text += "\n[color=red]Error:[/color] Acción desconocida."
