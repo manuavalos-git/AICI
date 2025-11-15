@@ -1,0 +1,111 @@
+name: Deploy Godot to GitHub Pages
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  export-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: 🎮 Setup Godot
+        uses: chickensoft-games/setup-godot@v1
+        with:
+          version: 4.3.0
+          use-dotnet: false
+          include-templates: true
+
+      - name: 🔍 Verify Godot Installation
+        run: godot --version
+
+      - name: 📋 List Assets Before Import
+        run: |
+          echo "=== Checking asset files ==="
+          ls -lh assets/*.fbx assets/*.glb 2>/dev/null || echo "No FBX/GLB files found"
+          ls -lh assets/fresadora2/*.glb 2>/dev/null || echo "No fresadora files found"
+
+      - name: 🔄 Import Assets (Extended Time)
+        run: |
+          echo "=== Starting asset import ==="
+          timeout 60 godot --headless --editor --quit || echo "Import completed or timed out"
+          echo "=== Import finished ==="
+
+      - name: 🔍 Verify Imported Assets
+        run: |
+          echo "=== Checking .godot/imported folder ==="
+          ls -lh .godot/imported/ | head -20 || echo "No imported files found"
+          echo "=== Checking .import files ==="
+          find assets -name "*.import" -type f | head -10
+
+      - name: 🏗️ Export to Web
+        run: |
+          mkdir -p build/web
+          echo "=== Starting Web export ==="
+          godot --headless --export-release "Web" build/web/GodotAI.html --verbose
+          echo "=== Export completed ==="
+
+      - name: 📊 Verify Export Output
+        run: |
+          echo "=== Build output files ==="
+          ls -lh build/web/
+          echo "=== Checking .pck size ==="
+          du -h build/web/*.pck 2>/dev/null || echo "No .pck file found"
+
+      - name: 🔗 Create index.html redirect
+        run: |
+          cat > build/web/index.html << 'EOF'
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <meta charset="utf-8">
+            <meta http-equiv="refresh" content="0; url=GodotAI.html">
+            <title>Redirecting...</title>
+          </head>
+          <body>
+            <p>Redirecting to <a href="GodotAI.html">GodotAI.html</a>...</p>
+          </body>
+          </html>
+          EOF
+
+      - name: 📝 Create Netlify Headers (CORS for WebAssembly)
+        run: |
+          cat > build/web/_headers << 'EOF'
+          /*
+            Cross-Origin-Embedder-Policy: require-corp
+            Cross-Origin-Opener-Policy: same-origin
+            Access-Control-Allow-Origin: *
+          EOF
+
+      - name: 🌐 Setup GitHub Pages
+        uses: actions/configure-pages@v4
+
+      - name: 📤 Upload Artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: "./build/web"
+
+      - name: 🚀 Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+      - name: ✅ Deployment Complete
+        run: |
+          echo "🎉 Deployed successfully!"
+          echo "🌐 Your site: ${{ steps.deployment.outputs.page_url }}"
