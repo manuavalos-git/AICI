@@ -4,6 +4,10 @@ on:
   push:
     branches:
       - master
+  pull_request:
+    branches:
+      - master
+    types: [opened, synchronize, reopened, closed]
   workflow_dispatch:
 
 permissions:
@@ -65,21 +69,50 @@ jobs:
         run: |
           echo "=== Build output files ==="
           ls -lh build/web/
-          echo "=== Checking .pck size ==="
-          du -h build/web/*.pck 2>/dev/null || echo "No .pck file found"
+          echo ""
+          echo "=== Verifying all required files ==="
+          for file in GodotAI.html GodotAI.js GodotAI.wasm GodotAI.pck GodotAI.png GodotAI.icon.png GodotAI.apple-touch-icon.png GodotAI.audio.worklet.js; do
+            if [ -f "build/web/$file" ]; then
+              echo "✅ $file - $(du -h build/web/$file | cut -f1)"
+            else
+              echo "❌ $file - MISSING!"
+              exit 1
+            fi
+          done
+          echo ""
+          echo "=== Total build size ==="
+          du -sh build/web/
 
       - name: 🔗 Create index.html redirect
         run: |
           cat > build/web/index.html << 'EOF'
           <!DOCTYPE html>
-          <html>
+          <html lang="en">
           <head>
             <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>3DAIRE - Industrial AI Assistant</title>
+            <script>
+              // Instant redirect - no flash
+              window.location.replace('GodotAI.html');
+            </script>
             <meta http-equiv="refresh" content="0; url=GodotAI.html">
-            <title>Redirecting...</title>
+            <style>
+              body { 
+                margin: 0; 
+                padding: 0; 
+                background: #242424; 
+                color: white; 
+                font-family: Arial, sans-serif;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                height: 100vh;
+              }
+            </style>
           </head>
           <body>
-            <p>Redirecting to <a href="GodotAI.html">GodotAI.html</a>...</p>
+            <p>Loading 3DAIRE... <a href="GodotAI.html" style="color: #4a9eff;">Click here if not redirected</a></p>
           </body>
           </html>
           EOF
@@ -107,5 +140,32 @@ jobs:
 
       - name: ✅ Deployment Complete
         run: |
-          echo "🎉 Deployed successfully!"
-          echo "🌐 Your site: ${{ steps.deployment.outputs.page_url }}"
+          echo "═══════════════════════════════════════════════════════"
+          echo "🎉 3DAIRE Deployment Complete!"
+          echo "═══════════════════════════════════════════════════════"
+          echo ""
+          echo "🌐 Live Site:"
+          echo "   • Main: ${{ steps.deployment.outputs.page_url }}"
+          echo "   • Direct: ${{ steps.deployment.outputs.page_url }}GodotAI.html"
+          echo ""
+          echo "📦 Generated Files:"
+          echo "   • GodotAI.html (Main entry point)"
+          echo "   • GodotAI.js (Engine ~324KB)"
+          echo "   • GodotAI.wasm (Runtime ~34MB)"
+          echo "   • GodotAI.pck (Assets ~50MB)"
+          echo "   • Audio worklets + Icons"
+          echo ""
+          echo "🔧 Features:"
+          echo "   ✅ Camera controls (Click + WASD)"
+          echo "   ✅ AI Chat system (Gemini Vision)"
+          echo "   ✅ 3D Warehouse scene"
+          echo "   ✅ Industrial assets library"
+          echo ""
+          echo "📱 Test Instructions:"
+          echo "   1. Open URL in browser"
+          echo "   2. Wait for 50MB .pck download"
+          echo "   3. Click to capture mouse"
+          echo "   4. Use WASD to move"
+          echo "   5. Press T for chat"
+          echo ""
+          echo "═══════════════════════════════════════════════════════"
