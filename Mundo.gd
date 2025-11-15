@@ -22,7 +22,7 @@ var conversation_history = []
 var screenshot_data = ""
 
 # ¡TU API KEY! (Conseguila en Google AI Studio)
-var api_key = "AIzaSyDwgIreZnegfT7JnY6b91_lHVIOK4RW0WI"
+var api_key = "AIzaSyBvjf2jcp_tVENdWBXFY6FWo5Vvc8YTtcY"
 
 # La URL de la API de Gemini Vision (2.0 flash soporta imágenes)
 var api_url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=" + api_key

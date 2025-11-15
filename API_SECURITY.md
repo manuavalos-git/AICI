@@ -4,7 +4,7 @@
 
 Tu API key está **expuesta públicamente** en el código:
 ```gdscript
-var api_key = "AIzaSyDwgIreZnegfT7JnY6b91_lHVIOK4RW0WI"
+var api_key = "AIzaSyBvjf2jcp_tVENdWBXFY6FWo5Vvc8YTtcY"
 ```
 
 **Consecuencias:**
