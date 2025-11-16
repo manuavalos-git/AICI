@@ -37,7 +37,10 @@ func _input(event):
 		# Si desactivamos el movimiento, liberar el mouse automáticamente
 		if not movement_enabled:
 			Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
-			mouse_captured = false
+			mouse_captured = true
+		else:
+			Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+			mouse_captured = true
 	
 	# Alternar captura del mouse con ESC
 	if event.is_action_pressed("ui_cancel"):
@@ -103,4 +106,3 @@ func enable_movement():
 		update_status_label()
 		Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 		mouse_captured = true
-
