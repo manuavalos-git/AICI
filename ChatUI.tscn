@@ -1,6 +1,6 @@
 [gd_scene load_steps=3 format=3 uid="uid://cb54db7iod375"]
 
-[ext_resource type="Script" path="res://ChatUI.gd" id="1_chatui"]
+[ext_resource type="Script" uid="uid://ne08pme1qjv1" path="res://ChatUI.gd" id="1_chatui"]
 
 [sub_resource type="LabelSettings" id="LabelSettings_title"]
 font_size = 14
