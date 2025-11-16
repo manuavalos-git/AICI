@@ -23,10 +23,10 @@ func _ready():
 func update_status_label():
 	if status_label:
 		if movement_enabled:
-			status_label.text = "🎮 FREE CAM: ACTIVADA\nWASD: Mover | Mouse: Mirar | Espacio: Subir | Shift: Bajar\nCTRL: Desactivar camara | T: Minimizar/Maximizar chat\n💬 CHAT: Click + Arrastra en 3D | Rueda: Zoom | Click en texto para escribir"
+			status_label.text = "🎮 FREE CAM: ACTIVADA\nWASD: Mover | Mouse: Mirar | Espacio: Subir | Shift: Bajar\nCTRL: Desactivar camara | T: Minimizar/Maximizar chat\n💬 CHAT: Click + Arrastra en 3D | Rueda: Zoom | Click en texto para escribir  | C para activar el chat"
 			status_label.modulate = Color.GREEN
 		else:
-			status_label.text = "🎮 FREE CAM: DESACTIVADA\nCTRL para activar | T: Minimizar/Maximizar chat\n💬 CHAT: Click + Arrastra en 3D | Rueda: Zoom | Click en texto para escribir"
+			status_label.text = "🎮 FREE CAM: DESACTIVADA\nCTRL para activar | T: Minimizar/Maximizar chat\n💬 CHAT: Click + Arrastra en 3D | Rueda: Zoom | Click en texto para escribir | C para activar el chat"
 			status_label.modulate = Color.RED
 
 func _input(event):
@@ -37,7 +37,10 @@ func _input(event):
 		# Si desactivamos el movimiento, liberar el mouse automáticamente
 		if not movement_enabled:
 			Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
-			mouse_captured = false
+			mouse_captured = true
+		else:
+			Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+			mouse_captured = true
 	
 	# Alternar captura del mouse con ESC
 	if event.is_action_pressed("ui_cancel"):
@@ -103,4 +106,3 @@ func enable_movement():
 		update_status_label()
 		Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 		mouse_captured = true
-

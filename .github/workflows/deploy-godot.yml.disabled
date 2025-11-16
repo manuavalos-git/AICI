@@ -1,0 +1,171 @@
+name: Deploy Godot to GitHub Pages
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+    types: [opened, synchronize, reopened, closed]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  export-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: 🎮 Setup Godot
+        uses: chickensoft-games/setup-godot@v1
+        with:
+          version: 4.3.0
+          use-dotnet: false
+          include-templates: true
+
+      - name: 🔍 Verify Godot Installation
+        run: godot --version
+
+      - name: 📋 List Assets Before Import
+        run: |
+          echo "=== Checking asset files ==="
+          ls -lh assets/*.fbx assets/*.glb 2>/dev/null || echo "No FBX/GLB files found"
+          ls -lh assets/fresadora2/*.glb 2>/dev/null || echo "No fresadora files found"
+
+      - name: 🔄 Import Assets (Extended Time)
+        run: |
+          echo "=== Starting asset import ==="
+          timeout 60 godot --headless --editor --quit || echo "Import completed or timed out"
+          echo "=== Import finished ==="
+
+      - name: 🔍 Verify Imported Assets
+        run: |
+          echo "=== Checking .godot/imported folder ==="
+          ls -lh .godot/imported/ | head -20 || echo "No imported files found"
+          echo "=== Checking .import files ==="
+          find assets -name "*.import" -type f | head -10
+
+      - name: 🏗️ Export to Web
+        run: |
+          mkdir -p build/web
+          echo "=== Starting Web export ==="
+          godot --headless --export-release "Web" build/web/GodotAI.html --verbose
+          echo "=== Export completed ==="
+
+      - name: 📊 Verify Export Output
+        run: |
+          echo "=== Build output files ==="
+          ls -lh build/web/
+          echo ""
+          echo "=== Verifying all required files ==="
+          for file in GodotAI.html GodotAI.js GodotAI.wasm GodotAI.pck GodotAI.png GodotAI.icon.png GodotAI.apple-touch-icon.png GodotAI.audio.worklet.js; do
+            if [ -f "build/web/$file" ]; then
+              echo "✅ $file - $(du -h build/web/$file | cut -f1)"
+            else
+              echo "❌ $file - MISSING!"
+              exit 1
+            fi
+          done
+          echo ""
+          echo "=== Total build size ==="
+          du -sh build/web/
+
+      - name: 🔗 Create index.html redirect
+        run: |
+          cat > build/web/index.html << 'EOF'
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>3DAIRE - Industrial AI Assistant</title>
+            <script>
+              // Instant redirect - no flash
+              window.location.replace('GodotAI.html');
+            </script>
+            <meta http-equiv="refresh" content="0; url=GodotAI.html">
+            <style>
+              body { 
+                margin: 0; 
+                padding: 0; 
+                background: #242424; 
+                color: white; 
+                font-family: Arial, sans-serif;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                height: 100vh;
+              }
+            </style>
+          </head>
+          <body>
+            <p>Loading 3DAIRE... <a href="GodotAI.html" style="color: #4a9eff;">Click here if not redirected</a></p>
+          </body>
+          </html>
+          EOF
+
+      - name: 📝 Create Netlify Headers (CORS for WebAssembly)
+        run: |
+          cat > build/web/_headers << 'EOF'
+          /*
+            Cross-Origin-Embedder-Policy: require-corp
+            Cross-Origin-Opener-Policy: same-origin
+            Access-Control-Allow-Origin: *
+          EOF
+
+      - name: 🌐 Setup GitHub Pages
+        uses: actions/configure-pages@v4
+
+      - name: 📤 Upload Artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: "./build/web"
+
+      - name: 🚀 Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+      - name: ✅ Deployment Complete
+        run: |
+          echo "═══════════════════════════════════════════════════════"
+          echo "🎉 3DAIRE Deployment Complete!"
+          echo "═══════════════════════════════════════════════════════"
+          echo ""
+          echo "🌐 Live Site:"
+          echo "   • Main: ${{ steps.deployment.outputs.page_url }}"
+          echo "   • Direct: ${{ steps.deployment.outputs.page_url }}GodotAI.html"
+          echo ""
+          echo "📦 Generated Files:"
+          echo "   • GodotAI.html (Main entry point)"
+          echo "   • GodotAI.js (Engine ~324KB)"
+          echo "   • GodotAI.wasm (Runtime ~34MB)"
+          echo "   • GodotAI.pck (Assets ~50MB)"
+          echo "   • Audio worklets + Icons"
+          echo ""
+          echo "🔧 Features:"
+          echo "   ✅ Camera controls (Click + WASD)"
+          echo "   ✅ AI Chat system (Gemini Vision)"
+          echo "   ✅ 3D Warehouse scene"
+          echo "   ✅ Industrial assets library"
+          echo ""
+          echo "📱 Test Instructions:"
+          echo "   1. Open URL in browser"
+          echo "   2. Wait for 50MB .pck download"
+          echo "   3. Click to capture mouse"
+          echo "   4. Use WASD to move"
+          echo "   5. Press T for chat"
+          echo ""
+          echo "═══════════════════════════════════════════════════════"

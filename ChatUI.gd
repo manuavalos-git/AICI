@@ -41,7 +41,7 @@ func toggle_minimize():
 		vbox.visible = false
 		custom_minimum_size = Vector2(400, 45)
 		size = Vector2(400, 45)
-		title_label.text = "💬 CHAT AI (Minimizado - T para abrir)"
+		title_label.text = "💬 CHAT AI (Minimizado - T para abrir | C para escribir)"
 	else:
 		# Maximizar - mostrar todo
 		rich_text.visible = true
@@ -49,4 +49,4 @@ func toggle_minimize():
 		vbox.visible = true
 		custom_minimum_size = Vector2.ZERO
 		size = original_size
-		title_label.text = "💬 CHAT AI (Click + Arrastra en 3D | T minimizar)"
+		title_label.text = "💬 CHAT AI (C escribir | T minimizar | ESC salir)"

@@ -6,11 +6,11 @@ extends Node3D
 @export var sub_viewport_node: SubViewport
 @export var chat_ui: Control  # Nueva referencia al ChatUI
 
-# ¡NUEVA VARIABLE!
-@export var gemini_request: HTTPRequest
+# ¡NUEVA VARIABLE! - OpenAI HTTPRequest
+@export var openai_request: HTTPRequest
 @onready var sprite = $Sprite3D
-@onready var camera = $Camera3D
-@onready var camera_controller = $Camera3D  # Referencia al script de la cámara
+@onready var camera = $Player/Head/Camera3D
+@onready var camera_controller = $Player/Head/Camera3D # Referencia al script de la cámara
 
 var isVisible = false
 var is_dragging_chat = false
@@ -21,11 +21,19 @@ var system_prompt = ""
 var conversation_history = []
 var screenshot_data = ""
 
-# ¡TU API KEY! (Conseguila en Google AI Studio)
-var api_key = "AIzaSyBvmbm_iAQk1sdgVZhlnJH3S8ffIpPK7Q8"
+# 🔑 OPENAI API KEY (desde localStorage del navegador)
+var api_key = ""
+var api_key_configured = false
+var api_key_dialog_shown = false
 
-# La URL de la API de Gemini Vision (2.0 flash soporta imágenes)
-var api_url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=" + api_key
+# 🌐 URL de la API de OpenAI (GPT-4 Vision)
+var api_url = "https://api.openai.com/v1/chat/completions"
+
+# 🔒 CONTROL DE PETICIONES: Una a la vez (no queue system)
+var is_processing_request = false  # Simple boolean lock
+var retry_count = 0
+var MAX_RETRIES = 3
+var current_request_data = null  # Para reintentos si falla
 
 # --- NUEVO: referencia al AssetManager ---
 @onready var asset_manager = $AssetManager
@@ -65,6 +73,9 @@ func _ready():
 	# Cargar el system prompt desde el archivo
 	load_system_prompt()
 	
+	# 🔑 Intentar cargar API key desde localStorage (web) o variable de entorno (desktop)
+	load_api_key()
+	
 	# 1. Conectar la UI (esto ya lo tenías)
 	line_edit.text_submitted.connect(_on_text_submitted)
 	
@@ -72,13 +83,57 @@ func _ready():
 	line_edit.focus_entered.connect(_on_line_edit_focus_entered)
 	line_edit.focus_exited.connect(_on_line_edit_focus_exited)
 	
-	# 2. ¡NUEVA CONEXIÓN!
+	# 2. ¡CONEXIÓN OPENAI!
 	# Conectamos la señal de "request_completed" del nodo HTTPRequest
-	# a una nueva función que crearemos.
-	gemini_request.request_completed.connect(_on_request_completed)
+	openai_request.request_completed.connect(_on_request_completed)
 	
 	# Mensaje de bienvenida
-	rich_text_label.text = "[color=orange]🏭 Asistente Industrial:[/color] ¡Hola! Soy tu asistente de enseñanza industrial. Puedo ayudarte a aprender sobre herramientas, maquinaria y equipos industriales.\n\n💡 Comandos especiales:\n- Escribe 'ver' o 'captura' para que vea lo que estás viendo en el simulador\n- Pregúntame sobre cualquier herramienta o equipo industrial\n- Pídeme que te muestre objetos 3D\n\n¿En qué puedo ayudarte?"
+	show_welcome_message()
+
+# 🔑 Cargar API key desde localStorage (web) o variable de entorno (desktop)
+func load_api_key():
+	# Prioridad 1: Intentar cargar desde localStorage (web)
+	if OS.has_feature("web"):
+		var js_code = "localStorage.getItem('openai_api_key') || ''"
+		api_key = JavaScriptBridge.eval(js_code)
+		if api_key != "" and api_key != "null":
+			api_key_configured = true
+			print("🔑 API key cargada desde localStorage")
+		else:
+			print("⚠️ No hay API key en localStorage")
+	else:
+		# Prioridad 2: Variable de entorno (desktop)
+		var env_key = OS.get_environment("OPENAI_API_KEY")
+		if env_key != "":
+			api_key = env_key
+			api_key_configured = true
+			print("🔑 API key cargada desde variable de entorno")
+		else:
+			print("⚠️ No hay API key en variable de entorno")
+
+# 💾 Guardar API key en localStorage (solo web)
+func save_api_key(key: String):
+	if OS.has_feature("web"):
+		var js_code = "localStorage.setItem('openai_api_key', '" + key + "')"
+		JavaScriptBridge.eval(js_code)
+		print("💾 API key guardada en localStorage")
+	api_key = key
+	api_key_configured = true
+
+# 🗑️ Eliminar API key
+func clear_api_key():
+	if OS.has_feature("web"):
+		JavaScriptBridge.eval("localStorage.removeItem('openai_api_key')")
+	api_key = ""
+	api_key_configured = false
+	print("🗑️ API key eliminada")
+
+# 📝 Mostrar mensaje de bienvenida
+func show_welcome_message():
+	if api_key_configured:
+		rich_text_label.text = "[color=orange]🏭 Asistente Industrial:[/color] ¡Hola! Soy tu asistente de enseñanza industrial.\n\n💡 Puedo ayudarte con:\n- Explicaciones sobre herramientas y equipos\n- Insertar objetos 3D en el simulador\n- Responder preguntas técnicas\n\n¿En qué puedo ayudarte?"
+	else:
+		rich_text_label.text = "[color=yellow]⚠️ API Key Requerida[/color]\n\nPara usar el asistente, necesitas una API key de OpenAI.\n\n📋 [color=lightblue]Pasos:[/color]\n1. Ve a: [color=cyan]https://platform.openai.com/api-keys[/color]\n2. Crea una cuenta (gratis)\n3. Genera una API key\n4. Escribe: [color=green]/setkey tu-api-key-aqui[/color]\n\n💡 Tu key se guardará localmente en tu navegador."
 
 func load_system_prompt():
 	var file_path = "res://system_prompt_industrial.md"
@@ -97,37 +152,77 @@ func load_system_prompt():
 		+ "Ejemplo: {\"action\":\"insert\",\"asset\":\"fresadora\"}"
 
 
-# --- 2. FUNCIÓN MODIFICADA ---
+# --- 2. FUNCIÓN MODIFICADA - ALWAYS CAPTURE ---
 func _on_text_submitted(text):
 	rich_text_label.text += "\n[color=lightblue]Tú:[/color] " + text
 	line_edit.text = ""
-
-	# Detectar si hay que hacer captura
-	var needs_screenshot = false
-	var text_lower = text.to_lower()
-	if "ver" in text_lower or "captura" in text_lower or "mira" in text_lower or "observa" in text_lower or "qué ves" in text_lower or "que ves" in text_lower:
-		needs_screenshot = true
-		rich_text_label.text += "\n[color=yellow]📸 Capturando pantalla...[/color]"
-
+	line_edit.grab_focus()  # ✅ Mantener foco después de enviar
+	
+	# 🔑 Comando especial: /setkey para configurar API key
+	if text.begins_with("/setkey "):
+		var new_key = text.substr(8).strip_edges()
+		if new_key.length() > 20:  # Validación básica
+			save_api_key(new_key)
+			rich_text_label.text += "\n[color=green]✅ API key configurada correctamente![/color]\n\n" + \
+				"[color=orange]Bot:[/color] Ahora puedes usar el asistente. ¿En qué puedo ayudarte?"
+		else:
+			rich_text_label.text += "\n[color=red]❌ Error: API key inválida (muy corta)[/color]"
+		return
+	
+	# 🔑 Comando especial: /clearkey para eliminar API key
+	if text == "/clearkey":
+		clear_api_key()
+		rich_text_label.text += "\n[color=yellow]🗑️ API key eliminada[/color]"
+		show_welcome_message()
+		return
+	
+	# 🚫 Verificar que haya API key configurada
+	if not api_key_configured or api_key == "":
+		rich_text_label.text += "\n[color=red]❌ Error: No hay API key configurada[/color]\n\n" + \
+			"Usa el comando: [color=green]/setkey tu-api-key-aqui[/color]"
+		return
+	
+	# 🧠 CAPTURA INTELIGENTE: Siempre capturar (GPT-4o decide si la usa)
 	rich_text_label.text += "\n[color=orange]Bot:[/color] Pensando..."
-
-	if needs_screenshot:
-		await take_screenshot()
-
-	# Construir el mensaje del usuario
-	var user_parts = []
-	if needs_screenshot and screenshot_data != "":
-		user_parts.append({
-			"inline_data": {
-				"mime_type": "image/png",
-				"data": screenshot_data
-			}
+	
+	# Siempre tomar captura para contexto visual
+	await take_screenshot()
+	
+	# 🚫 Bloquear si ya hay una petición en curso
+	if is_processing_request:
+		rich_text_label.text = rich_text_label.text.replace("Pensando...", 
+			"⚠️ Esperando respuesta anterior...")
+		print("⚠️ Petición bloqueada: Ya hay una en proceso")
+		return
+	
+	is_processing_request = true
+	
+	# 🌐 Construir mensaje OpenAI (formato chat/completions)
+	var messages = [{"role": "system", "content": system_prompt}]
+	
+	# Siempre incluir captura de pantalla para contexto visual
+	if screenshot_data != "":
+		print("🖼️ Agregando imagen al mensaje (", screenshot_data.length(), " chars)")
+		messages.append({
+			"role": "user",
+			"content": [
+				{"type": "text", "text": text},
+				{
+					"type": "image_url", 
+					"image_url": {
+						"url": "data:image/png;base64," + screenshot_data,
+						"detail": "high"
+					}
+				}
+			]
 		})
-	user_parts.append({"text": text})
-
+	else:
+		messages.append({"role": "user", "content": text})
+	
 	var body = {
-		"system_instruction": {"parts": [{"text": system_prompt}]},
-		"contents": [{"role": "user", "parts": user_parts}]
+		"model": "gpt-4o-2024-08-06",
+		"messages": messages,
+		"max_tokens": 1000
 	}
 
 	# --- 🔥 NUEVO BLOQUE: decidir si pedir JSON o texto ---
@@ -147,9 +242,31 @@ func _on_text_submitted(text):
 		body["generation_config"] = {"response_mime_type": "text/plain"}
 
 	var body_json = JSON.stringify(body)
-	var headers = ["Content-Type: application/json"]
-
-	gemini_request.request(api_url, headers, HTTPClient.METHOD_POST, body_json)
+	var headers = [
+		"Content-Type: application/json",
+		"Authorization: Bearer " + api_key
+	]
+	
+	# 📊 Enhanced logging
+	print("\n============================================================")
+	print("📤 ENVIANDO REQUEST A OPENAI")
+	print("============================================================")
+	print("🌐 URL: ", api_url)
+	print("📋 Headers: ", headers)
+	
+	var has_image = body_json.find("image_url") != -1
+	var has_base64 = body_json.find("data:image/png;base64,") != -1
+	print("🖼️ Contiene imagen: ", "SÍ ✅" if has_image else "NO ❌")
+	print("📊 Tamaño del body: ", body_json.length(), " caracteres")
+	if has_base64:
+		var image_start = body_json.find("data:image/png;base64,")
+		print("📸 Base64 encontrado en posición: ", image_start)
+	
+	print("📦 Body (primeros 500 chars): ", body_json.substr(0, 500))
+	print("============================================================")
+	print("(2) ")
+	
+	send_openai_request(body_json, headers)
 
 
 
@@ -170,50 +287,107 @@ func take_screenshot():
 	print("📸 Captura tomada: ", screenshot_data.length(), " caracteres en base64")
 
 
-# --- 3. NUEVA FUNCIÓN ---
+# 📡 Enviar request a OpenAI
+func send_openai_request(body_json: String, headers: Array):
+	current_request_data = {"body": body_json, "headers": headers}
+	var error = openai_request.request(api_url, headers, HTTPClient.METHOD_POST, body_json)
+	
+	if error != OK:
+		print("❌ Error al enviar request: ", error)
+		rich_text_label.text = rich_text_label.text.replace("Pensando...", 
+			"Error al enviar mensaje ❌")
+		is_processing_request = false
+
+
+# --- 3. FUNCIÓN MODIFICADA ---
 # Esta función se llama AUTOMÁTICAMENTE cuando la API responde
 func _on_request_completed(result, response_code, headers, body):
-	if response_code != 200:
-		rich_text_label.text += "\n[color=red]Error:[/color] No se pudo conectar. Código: " + str(response_code)
-		print("Error de API: ", body.get_string_from_utf8())
-		return
-
+	print("\n============================================================")
+	print("📥 RESPUESTA RECIBIDA DE OPENAI")
+	print("============================================================")
+	print("📊 Result Code: ", result)
+	print("🔢 HTTP Status: ", response_code)
+	print("📋 Headers: ", headers)
+	
 	var response_text = body.get_string_from_utf8()
-	var json_data = JSON.parse_string(response_text)
-
-	if json_data == null:
-		rich_text_label.text += "\n[color=red]Error:[/color] Respuesta inválida del servidor."
-		print("Respuesta inválida: ", response_text)
+	print("📦 Body: ", response_text)
+	print("============================================================\n")
+	
+	# 🆕 MANEJO DE ERRORES
+	if response_code == 429:
+		rich_text_label.text += "\n[color=yellow]⚠️ Límite de API excedido. Espera unos segundos...[/color]"
+		print("⚠️ Error 429: Rate limit excedido")
+		is_processing_request = false
 		return
-
-	if json_data.get("candidates") and json_data.candidates[0].get("content"):
-		var bot_response = json_data.candidates[0].content.parts[0].text
-		print("🧠 Respuesta cruda de Gemini:\n", bot_response)
-
-		# Intentar parsear JSON si la respuesta del bot es estructurada
-		var parsed = {}
-		var clean_response = bot_response.strip_edges()
-
-		# Buscar un bloque JSON dentro de la respuesta aunque tenga texto adicional
-		var json_start = clean_response.find("{")
-		var json_end = clean_response.rfind("}")
-		if json_start != -1 and json_end != -1:
-			var json_substring = clean_response.substr(json_start, json_end - json_start + 1)
-			var parsed_json = JSON.parse_string(json_substring)
-			if typeof(parsed_json) == TYPE_DICTIONARY:
-				parsed = parsed_json
-
-
-		# Si contiene 'action', interpretamos como comando
-		if parsed.has("action"):
-			handleBotAction(parsed)
-			return
-		else:
-			# Si no hay acción, mostramos texto normal
-			rich_text_label.text += "\n[color=orange]Bot:[/color] " + bot_response
+	
+	if response_code == 401:
+		rich_text_label.text += "\n[color=red]❌ Error de autenticación. Verifica tu API key.[/color]"
+		print("❌ Error 401: API key inválida")
+		is_processing_request = false
+		return
+	
+	if response_code != 200:
+		rich_text_label.text = rich_text_label.text.replace("Pensando...", 
+			"Error: Código " + str(response_code) + " ❌")
+		print("Error de API: ", response_text)
+		is_processing_request = false
+		return
+	
+	# Parsear respuesta JSON
+	var json_data = JSON.parse_string(response_text)
+	
+	if json_data == null or not json_data.has("choices"):
+		rich_text_label.text = rich_text_label.text.replace("Pensando...", 
+			"Error: Respuesta inválida ❌")
+		print("❌ Respuesta inválida de OpenAI")
+		is_processing_request = false
+		return
+	
+	# Extraer respuesta del bot
+	var bot_response = json_data.choices[0].message.content
+	print("🧠 Respuesta cruda de OpenAI:\n", bot_response)
+	
+	# Intentar parsear JSON si la respuesta es estructurada
+	var parsed = {}
+	var clean_response = bot_response.strip_edges()
+	
+	# Buscar bloque JSON (puede estar en ```json o sin markdown)
+	var json_substring = clean_response
+	if "```json" in clean_response:
+		var json_start = clean_response.find("```json") + 7
+		var json_end = clean_response.find("```", json_start)
+		if json_end != -1:
+			json_substring = clean_response.substr(json_start, json_end - json_start).strip_edges()
+	elif "```" in clean_response:
+		var json_start = clean_response.find("```") + 3
+		var json_end = clean_response.find("```", json_start)
+		if json_end != -1:
+			json_substring = clean_response.substr(json_start, json_end - json_start).strip_edges()
+	
+	# Intentar parsear como JSON
+	var json_start = json_substring.find("{")
+	var json_end = json_substring.rfind("}")
+	if json_start != -1 and json_end != -1:
+		var json_only = json_substring.substr(json_start, json_end - json_start + 1)
+		var parsed_json = JSON.parse_string(json_only)
+		if typeof(parsed_json) == TYPE_DICTIONARY:
+			parsed = parsed_json
+	
+	# Si contiene 'action', interpretar como comando
+	if parsed.has("action"):
+		handleBotAction(parsed)
+		rich_text_label.text = rich_text_label.text.replace("Pensando...", "")
 	else:
-		rich_text_label.text += "\n[color=red]Error:[/color] La API devolvió una respuesta vacía."
-		print("Respuesta vacía o bloqueada: ", response_text)
+		# Mostrar texto normal
+		rich_text_label.text = rich_text_label.text.replace("Pensando...", bot_response)
+	
+	# ✅ Desbloquear para permitir nuevas peticiones
+	current_request_data = null
+	is_processing_request = false
+	
+	# 🔄 Devolver el foco al chat para continuar conversación
+	if line_edit and not line_edit.has_focus():
+		line_edit.grab_focus()
 
 # Funciones para manejar el focus del chat
 func _on_line_edit_focus_entered():
@@ -316,66 +490,33 @@ func _input(event):
 
 # --- NUEVO: manejar acciones del bot ---
 func handleBotAction(parsed: Dictionary):
-	print("handleBotAction")
-
-	if not parsed.has("action"):
-		rich_text_label.text += "\n[color=red]Error:[/color] Acción no especificada."
-		return
-
-	var action = String(parsed.action).to_lower()
-
-	match action:
-		"insert":
-			# Lote: {"action":"insert","assets":[...]}
-			if parsed.has("assets") and parsed.assets is Array:
-				for n in parsed.assets:
-					if typeof(n) == TYPE_STRING:
-						var name := String(n)
-						if name.to_lower() == "all":
-							insertAllAssets()
-						else:
-							insertAsset(name)
-			else:
-				var asset_name = parsed.get("asset", "")
-				if asset_name != "":
-					# Normalizar 'all' a insertAllAssets()
-					if String(asset_name).to_lower() == "all":
-						insertAllAssets()
-					else:
-						insertAsset(asset_name)
-				else:
-					print("No se indicó asset")
-					rich_text_label.text += "\n[color=red]Error:[/color] No se indicó asset."
-
-		"insert_all":
-			insertAllAssets()
-
-		"say":
-			var msg = parsed.get("asset", "ok")
-			rich_text_label.text += "\n[color=orange]Bot:[/color] " + msg
-
-		_:
-			rich_text_label.text += "\n[color=red]Error:[/color] Acción desconocida."
-
-
-func insertAllAssets():
-	# Lista simple: las claves que ya definiste en asset_spawn_limits
-	var names: Array[String] = []
-	for k in asset_spawn_limits.keys():
-		names.append(String(k))
-
-	# Si tu AssetManager puede listar, podrías usarlo en lugar de lo de arriba.
-	# names = asset_manager.get_all_asset_names()  # si existiera
-
-	var insertados := []
-	for name in names:
-		var before = asset_spawn_count.get(name, 0)
-		insertAsset(name)
-		var after = asset_spawn_count.get(name, 0)
-		if after > before:
-			insertados.append(name)
-	if insertados.size() > 0:
-		rich_text_label.text += "\n[color=green]Sistema:[/color] Insertados: " + ", ".join(insertados)
+	print("🎬 handleBotAction:", parsed)
+	
+	if parsed.has("action") and parsed.action == "insert":
+		var assets_to_insert = []
+		
+		# Soportar asset único (string o array)
+		if parsed.has("asset"):
+			var asset_value = parsed.get("asset")
+			if typeof(asset_value) == TYPE_STRING and asset_value != "":
+				assets_to_insert.append(asset_value)
+			elif typeof(asset_value) == TYPE_ARRAY:
+				assets_to_insert = asset_value
+		
+		# También soportar "assets" (plural, array)
+		if parsed.has("assets") and typeof(parsed.assets) == TYPE_ARRAY:
+			assets_to_insert = parsed.assets
+		
+		# Insertar todos los assets
+		if assets_to_insert.size() > 0:
+			for asset_name in assets_to_insert:
+				insertAsset(asset_name)
+		else:
+			rich_text_label.text += "\n[color=red]Error:[/color] No se indicaron assets."
+	
+	elif parsed.has("action") and parsed.action == "say":
+		var msg = parsed.get("message", "ok")
+		rich_text_label.text += "\n[color=orange]Bot:[/color] " + msg
 	else:
 		rich_text_label.text += "\n[color=yellow]Sistema:[/color] No se insertó nada (límite alcanzado o assets faltantes)."
 

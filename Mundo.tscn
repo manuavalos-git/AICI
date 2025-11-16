@@ -1,10 +1,10 @@
-[gd_scene load_steps=11 format=3 uid="uid://be0db0gytedhy"]
+[gd_scene load_steps=12 format=3 uid="uid://be0db0gytedhy"]
 
 [ext_resource type="Script" uid="uid://jpmwdaoeoqsu" path="res://Mundo.gd" id="1_ubi47"]
 [ext_resource type="PackedScene" uid="uid://cb54db7iod375" path="res://ChatUI.tscn" id="2_xywc0"]
 [ext_resource type="PackedScene" uid="uid://vg7yt2h1wvhc" path="res://scenery/warehouse_fbx.fbx" id="3_xywc0"]
-[ext_resource type="Script" uid="uid://be1vdxeqgytcg" path="res://CameraController.gd" id="4_camera"]
 [ext_resource type="Script" uid="uid://cswit7xlkn6cd" path="res://asset_manager.gd" id="5_5yunf"]
+[ext_resource type="Script" uid="uid://drq2cf54ecpv3" path="res://player.gd" id="5_drrim"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_xwo6f"]
 
@@ -21,17 +21,17 @@ viewport_path = NodePath("SubViewport")
 [sub_resource type="BoxShape3D" id="BoxShape3D_5yunf"]
 size = Vector3(112.307, 1, 54.634)
 
-[node name="Mundo" type="Node3D" node_paths=PackedStringArray("line_edit", "rich_text_label", "sub_viewport_node", "chat_ui", "gemini_request")]
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_5yunf"]
+radius = 0.4
+height = 1.7
+
+[node name="Mundo" type="Node3D" node_paths=PackedStringArray("line_edit", "rich_text_label", "sub_viewport_node", "chat_ui", "openai_request")]
 script = ExtResource("1_ubi47")
 line_edit = NodePath("SubViewport/Control/VBoxContainer/LineEdit")
 rich_text_label = NodePath("SubViewport/Control/VBoxContainer/RichTextLabel")
 sub_viewport_node = NodePath("SubViewport")
 chat_ui = NodePath("SubViewport/Control")
-gemini_request = NodePath("GeminiRequest")
-
-[node name="Camera3D" type="Camera3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0.12248099, 1.8748475)
-script = ExtResource("4_camera")
+openai_request = NodePath("OpenAIRequest")
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("Environment_lgngo")
@@ -42,7 +42,7 @@ billboard = 1
 text = "🎮 FREE CAM: ACTIVADA
 WASD: Mover | Mouse: Mirar | Espacio: Subir | Shift: Bajar
 CTRL: Desactivar camara | T: Minimizar/Maximizar chat
-💬 CHAT: Click + Arrastra en 3D | Rueda: Zoom | Click en texto para escribir"
+💬 CHAT: Click + Arrastra en 3D | Rueda: Zoom | Click en texto para escribir | C para activar el chat"
 outline_size = 8
 
 [node name="Sprite3D" type="Sprite3D" parent="."]
@@ -64,7 +64,7 @@ offset_bottom = 0.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="GeminiRequest" type="HTTPRequest" parent="."]
+[node name="OpenAIRequest" type="HTTPRequest" parent="."]
 
 [node name="warehouse_fbx" parent="." instance=ExtResource("3_xywc0")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -87, -3, 74)
@@ -77,3 +77,14 @@ script = ExtResource("5_5yunf")
 [node name="CollisionShape3D" type="CollisionShape3D" parent="FloorCollision"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 53.281, -2.312, -0.542)
 shape = SubResource("BoxShape3D_5yunf")
+
+[node name="Player" type="CharacterBody3D" parent="."]
+script = ExtResource("5_drrim")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Player"]
+shape = SubResource("CapsuleShape3D_5yunf")
+
+[node name="Head" type="Node3D" parent="Player"]
+
+[node name="Camera3D" type="Camera3D" parent="Player/Head"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0.12248099, 1.8748475)

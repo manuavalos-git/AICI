@@ -2,13 +2,28 @@
 
 Simulador educativo de entornos industriales con asistente de IA integrado para aprendizaje de equipamiento y procesos industriales.
 
+## 🔑 Configuración Inicial (IMPORTANTE)
+
+**Antes de usar el simulador, necesitas configurar tu API key de OpenAI:**
+
+1. Ve a https://platform.openai.com/api-keys
+2. Crea una cuenta (gratis con $5 de crédito)
+3. Genera una API key
+4. En el chat del simulador, escribe:
+   ```
+   /setkey sk-proj-tu-key-aqui
+   ```
+
+📖 **Guía completa**: Ver [API_KEY_SETUP.md](API_KEY_SETUP.md)
+
 ## 🎯 Características
 
-### Asistente de IA Industrial
+### Asistente de IA Industrial (GPT-4o con Visión)
 - **Visión por computadora**: La IA puede ver lo que estás viendo en el simulador
 - **Instructor especializado**: Enseña sobre herramientas, maquinaria y equipos industriales
 - **Conocimiento técnico**: Explica funcionamiento, aplicaciones, seguridad y mantenimiento
 - **Interactivo**: Responde preguntas y muestra objetos 3D bajo demanda
+- **Privacidad**: Tu API key se guarda localmente en tu navegador
 
 ### Entorno 3D
 - **Free Camera**: Movimiento libre por la fábrica/almacén
@@ -33,21 +48,25 @@ Simulador educativo de entornos industriales con asistente de IA integrado para 
 
 ## 💬 Comandos del Chat
 
-### Comandos de Visión
-Usa estas palabras para que la IA vea tu pantalla:
-- "ver" - "¿qué ves?"
-- "captura" - "mira esto"
-- "observa" - "analiza"
+### Comandos de Sistema
+- `/setkey <tu-key>` - Configurar API key de OpenAI
+- `/clearkey` - Eliminar API key guardada
 
-Ejemplo: *"Mira lo que estoy viendo, ¿qué es esto?"*
+### Visión Automática
+La IA **siempre puede ver** tu pantalla. No necesitas usar palabras especiales como "ver" o "captura". Simplemente pregunta sobre lo que hay en la escena:
+- "¿Qué objetos hay en la escena?"
+- "Describe el entorno"
+- "¿De qué color es esa máquina?"
 
-### Comandos de Invocación (Futuro)
-- `mostrar [objeto]` - Invocar un asset 3D
-- Ejemplo: *"mostrar llave inglesa"*
+### Comandos de Invocación
+- "Muestra una fresadora" - Invocar asset 3D
+- "Crea una válvula" - Insertar objeto
+- "Pon todos los equipos" - Insertar múltiples assets
 
 ### Preguntas Educativas
 - "¿Cómo funciona una bomba centrífuga?"
 - "¿Para qué sirve una llave dinamométrica?"
+- "Explícame sobre seguridad industrial"
 - "¿Qué EPP necesito para trabajar con maquinaria?"
 - "Explícame los tipos de válvulas industriales"
 

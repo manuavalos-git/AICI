@@ -1,0 +1,230 @@
+name: Deploy Static Build to GitHub Pages
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  deploy-static:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 📦 Verify Pre-built Files
+        run: |
+          echo "═══════════════════════════════════════════════════════"
+          echo "🔍 Checking Pre-built Godot Export Files"
+          echo "═══════════════════════════════════════════════════════"
+          echo ""
+
+          REQUIRED_FILES=(
+            "GodotAI.html"
+            "GodotAI.js"
+            "GodotAI.wasm"
+            "GodotAI.pck"
+            "GodotAI.png"
+            "GodotAI.icon.png"
+            "GodotAI.apple-touch-icon.png"
+            "GodotAI.audio.worklet.js"
+          )
+
+          ALL_PRESENT=true
+
+          for file in "${REQUIRED_FILES[@]}"; do
+            if [ -f "$file" ]; then
+              SIZE=$(du -h "$file" | cut -f1)
+              echo "✅ $file ($SIZE)"
+            else
+              echo "❌ $file - MISSING!"
+              ALL_PRESENT=false
+            fi
+          done
+
+          echo ""
+
+          if [ "$ALL_PRESENT" = false ]; then
+            echo "⚠️  ERROR: Some pre-built files are missing!"
+            echo "Please export from Godot locally first:"
+            echo "   1. Open project in Godot Editor"
+            echo "   2. Project > Export > Web"
+            echo "   3. Export to project root"
+            echo "   4. Commit the exported files"
+            exit 1
+          fi
+
+          echo "✅ All pre-built files present!"
+          echo ""
+          echo "📊 Total Size:"
+          du -sh . | grep -E '^\S+' || echo "Calculating..."
+          echo ""
+          echo "═══════════════════════════════════════════════════════"
+
+      - name: 📁 Prepare Deployment Directory
+        run: |
+          mkdir -p deploy
+
+          # Copy all Godot export files
+          cp GodotAI.* deploy/ 2>/dev/null || true
+
+          echo "Copied files to deploy directory:"
+          ls -lh deploy/
+
+      - name: 🔗 Create index.html Redirect
+        run: |
+          cat > deploy/index.html << 'EOF'
+          <!DOCTYPE html>
+          <html lang="es">
+          <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>3DAIRE - Asistente Industrial con IA</title>
+            <meta name="description" content="Plataforma 3D interactiva para gestión industrial con inteligencia artificial">
+            <script>
+              // Redirección instantánea
+              window.location.replace('GodotAI.html');
+            </script>
+            <meta http-equiv="refresh" content="0; url=GodotAI.html">
+            <style>
+              body { 
+                margin: 0; 
+                padding: 0; 
+                background: #242424; 
+                color: white; 
+                font-family: 'Segoe UI', Arial, sans-serif;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                height: 100vh;
+                flex-direction: column;
+              }
+              .loader {
+                width: 50px;
+                height: 50px;
+                border: 5px solid #333;
+                border-top: 5px solid #4a9eff;
+                border-radius: 50%;
+                animation: spin 1s linear infinite;
+                margin-bottom: 20px;
+              }
+              @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+              }
+              a {
+                color: #4a9eff;
+                text-decoration: none;
+                font-weight: bold;
+              }
+              a:hover {
+                text-decoration: underline;
+              }
+            </style>
+          </head>
+          <body>
+            <div class="loader"></div>
+            <p>Cargando 3DAIRE... <a href="GodotAI.html">Haz clic aquí si no se redirige</a></p>
+          </body>
+          </html>
+          EOF
+
+          echo "✅ index.html redirect created"
+
+      - name: 🔒 Create CORS Headers for WebAssembly
+        run: |
+          cat > deploy/_headers << 'EOF'
+          # CORS headers required for SharedArrayBuffer and WebAssembly threads
+          /*
+            Cross-Origin-Embedder-Policy: require-corp
+            Cross-Origin-Opener-Policy: same-origin
+            Access-Control-Allow-Origin: *
+            Cache-Control: public, max-age=3600
+
+          # Cache static assets longer
+          /*.wasm
+            Cache-Control: public, max-age=31536000, immutable
+
+          /*.js
+            Cache-Control: public, max-age=31536000, immutable
+
+          /*.pck
+            Cache-Control: public, max-age=31536000, immutable
+          EOF
+
+          echo "✅ _headers file created with CORS and caching rules"
+
+      - name: 📊 Deployment Summary
+        run: |
+          echo "═══════════════════════════════════════════════════════"
+          echo "📦 Files Ready for Deployment"
+          echo "═══════════════════════════════════════════════════════"
+          ls -lh deploy/
+          echo ""
+          echo "Total deployment size:"
+          du -sh deploy/
+          echo "═══════════════════════════════════════════════════════"
+
+      - name: 🌐 Setup GitHub Pages
+        uses: actions/configure-pages@v4
+
+      - name: 📤 Upload to GitHub Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: "./deploy"
+
+      - name: 🚀 Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+      - name: ✅ Deployment Complete
+        run: |
+          echo ""
+          echo "╔═══════════════════════════════════════════════════════╗"
+          echo "║                                                       ║"
+          echo "║   🎉  3DAIRE Deployment Successful!                   ║"
+          echo "║                                                       ║"
+          echo "╚═══════════════════════════════════════════════════════╝"
+          echo ""
+          echo "🌐 Live Site:"
+          echo "   📍 Main: https://aiciorg.github.io/AICI/"
+          echo "   📍 Direct: https://aiciorg.github.io/AICI/GodotAI.html"
+          echo ""
+          echo "📦 Deployed Files:"
+          echo "   ✅ GodotAI.html    - Entry point"
+          echo "   ✅ GodotAI.js      - Engine (~324KB)"
+          echo "   ✅ GodotAI.wasm    - Runtime (~34MB)"
+          echo "   ✅ GodotAI.pck     - Game data (~50MB)"
+          echo "   ✅ Assets          - Icons, audio worklets"
+          echo ""
+          echo "🎮 Features Active:"
+          echo "   ✅ 3D Warehouse Environment"
+          echo "   ✅ First-Person Camera (WASD + Mouse)"
+          echo "   ✅ AI Chat System (Press T)"
+          echo "   ✅ Industrial Asset Library"
+          echo ""
+          echo "📱 How to Test:"
+          echo "   1️⃣  Open URL (wait ~5s for 84MB download)"
+          echo "   2️⃣  Click canvas to capture mouse"
+          echo "   3️⃣  Use WASD to move, Mouse to look around"
+          echo "   4️⃣  Press ESC to release mouse"
+          echo "   5️⃣  Press T to open AI chat"
+          echo ""
+          echo "⚡ Deployment Speed: < 30 seconds"
+          echo "   (No compilation - just static file deployment!)"
+          echo ""
+          echo "╔═══════════════════════════════════════════════════════╗"
+          echo "║  Ready to use! Clear browser cache if needed.        ║"
+          echo "╚═══════════════════════════════════════════════════════╝"
+          echo ""
