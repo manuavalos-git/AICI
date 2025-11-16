@@ -22,10 +22,10 @@ var conversation_history = []
 var screenshot_data = ""
 
 # ¡TU API KEY! (Conseguila en Google AI Studio)
-var api_key = "AIzaSyDwgIreZnegfT7JnY6b91_lHVIOK4RW0WI"
+var api_key = "AIzaSyBvmbm_iAQk1sdgVZhlnJH3S8ffIpPK7Q8"
 
 # La URL de la API de Gemini Vision (2.0 flash soporta imágenes)
-var api_url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=" + api_key
+var api_url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=" + api_key
 
 # --- NUEVO: referencia al AssetManager ---
 @onready var asset_manager = $AssetManager
@@ -40,7 +40,7 @@ var asset_spawn_limits = {
 	"valvula": 1,     
 	"fresadora": 1,
 	"chiller": 1,    
-	"llave": 5,        
+	"llave": 5,  
 }
 
 #  NUEVO: Posiciones y rotaciones fijas para assets específicos
@@ -137,7 +137,10 @@ func _on_text_submitted(text):
 		if word in text_lower:
 			force_json = true
 			break
-
+ # NUEVO: si menciona “todos/todo/todo junto/spawnear todos”, también forzamos JSON
+		if not force_json and ("todos" in text_lower or "todo junto" in text_lower or "todo" in text_lower or "spawnear todos" in text_lower):
+			force_json = true
+			
 	if force_json:
 		body["generation_config"] = {"response_mime_type": "application/json"}
 	else:
@@ -314,18 +317,67 @@ func _input(event):
 # --- NUEVO: manejar acciones del bot ---
 func handleBotAction(parsed: Dictionary):
 	print("handleBotAction")
-	if parsed.has("action") and parsed.action == "insert":
-		var asset_name = parsed.get("asset", "")
-		if asset_name != "":
-			insertAsset(asset_name)
-		else:
-			print("No se indicó asset")
-			rich_text_label.text += "\n[color=red]Error:[/color] No se indicó asset."
-	elif parsed.has("action") and parsed.action == "say":
-		var msg = parsed.get("asset", "ok")
-		rich_text_label.text += "\n[color=orange]Bot:[/color] " + msg
+
+	if not parsed.has("action"):
+		rich_text_label.text += "\n[color=red]Error:[/color] Acción no especificada."
+		return
+
+	var action = String(parsed.action).to_lower()
+
+	match action:
+		"insert":
+			# Lote: {"action":"insert","assets":[...]}
+			if parsed.has("assets") and parsed.assets is Array:
+				for n in parsed.assets:
+					if typeof(n) == TYPE_STRING:
+						var name := String(n)
+						if name.to_lower() == "all":
+							insertAllAssets()
+						else:
+							insertAsset(name)
+			else:
+				var asset_name = parsed.get("asset", "")
+				if asset_name != "":
+					# Normalizar 'all' a insertAllAssets()
+					if String(asset_name).to_lower() == "all":
+						insertAllAssets()
+					else:
+						insertAsset(asset_name)
+				else:
+					print("No se indicó asset")
+					rich_text_label.text += "\n[color=red]Error:[/color] No se indicó asset."
+
+		"insert_all":
+			insertAllAssets()
+
+		"say":
+			var msg = parsed.get("asset", "ok")
+			rich_text_label.text += "\n[color=orange]Bot:[/color] " + msg
+
+		_:
+			rich_text_label.text += "\n[color=red]Error:[/color] Acción desconocida."
+
+
+func insertAllAssets():
+	# Lista simple: las claves que ya definiste en asset_spawn_limits
+	var names: Array[String] = []
+	for k in asset_spawn_limits.keys():
+		names.append(String(k))
+
+	# Si tu AssetManager puede listar, podrías usarlo en lugar de lo de arriba.
+	# names = asset_manager.get_all_asset_names()  # si existiera
+
+	var insertados := []
+	for name in names:
+		var before = asset_spawn_count.get(name, 0)
+		insertAsset(name)
+		var after = asset_spawn_count.get(name, 0)
+		if after > before:
+			insertados.append(name)
+	if insertados.size() > 0:
+		rich_text_label.text += "\n[color=green]Sistema:[/color] Insertados: " + ", ".join(insertados)
 	else:
-		rich_text_label.text += "\n[color=red]Error:[/color] Acción desconocida."
+		rich_text_label.text += "\n[color=yellow]Sistema:[/color] No se insertó nada (límite alcanzado o assets faltantes)."
 
 
 # --- NUEVO: insertar asset en el mundo ---
