@@ -9,8 +9,8 @@ extends Node3D
 # ¡NUEVA VARIABLE! - OpenAI HTTPRequest
 @export var openai_request: HTTPRequest
 @onready var sprite = $Sprite3D
-@onready var camera = $Camera3D
-@onready var camera_controller = $Camera3D  # Referencia al script de la cámara
+@onready var camera = $Player/Head/Camera3D
+@onready var camera_controller = $Player/Head/Camera3D # Referencia al script de la cámara
 
 var isVisible = false
 var is_dragging_chat = false
