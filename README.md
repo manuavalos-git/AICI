@@ -312,13 +312,15 @@ branches:
 
 ## 🛣️ Roadmap / Mejoras Futuras
 
+- Agregar compatibilidad de este software para VR/AR
+- Integrar otras IAs al Chatbot tales como Copilot, Claude, etc
 - Historial de conversación persistente
 - Interacción avanzada con objetos 3D
 - Más maquinaria industrial (sumar nuevos assets)
 - Animaciones de funcionamiento real
 - Simulaciones de procesos industriales
 - Mejorar posicionamiento de assets con un algoritmo que los ubique en la mejor posición posible evitando colisiones entre sí
-- Integrar API de Speech-to-Text (hablarle al asistente).
+- Integrar API de Speech-to-Text (hablarle al asistente)
 - Integrar API de Text-to-Speech (que el asistente responda con voz) 
 - Modo quiz / evaluación
 
