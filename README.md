@@ -76,8 +76,6 @@ Ver guía completa: API_KEY_SETUP.md
 | Activar chat para escribir | TAB |
 | Zoom del chat | Rueda del mouse |
 
-Cuando el chat tiene foco → la cámara se desactiva.
-
 ---
 
 ## 📚 Comandos del Chat
@@ -316,9 +314,11 @@ branches:
 
 - Historial de conversación persistente
 - Interacción avanzada con objetos 3D
-- Más maquinaria industrial
+- Más maquinaria industrial (sumar nuevos assets)
 - Animaciones de funcionamiento real
 - Simulaciones de procesos industriales
+- Mejorar posicionamiento de assets con un algoritmo que los ubique en la mejor posición posible evitando colisiones entre sí
+- Integrar API de Text-to-Speech (que el asistente responda con voz) 
 - Modo quiz / evaluación
 
 ---
