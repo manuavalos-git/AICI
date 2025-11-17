@@ -53,6 +53,11 @@ func _input(event):
 	
 	# Rotación con movimiento del mouse (solo si el movimiento está habilitado)
 	if event is InputEventMouseMotion and mouse_captured and movement_enabled:
+		# 🔒 No rotar si algún control UI tiene el foco
+		var focused_control = get_viewport().gui_get_focus_owner()
+		if focused_control != null:
+			return
+		
 		rotate_y(deg_to_rad(-event.relative.x * sensitivity))
 		rotate_object_local(Vector3(1, 0, 0), deg_to_rad(-event.relative.y * sensitivity))
 		
@@ -62,6 +67,11 @@ func _input(event):
 func _process(delta):
 	# No mover si los controles están deshabilitados
 	if not mouse_captured or not movement_enabled:
+		return
+	
+	# 🔒 No mover si algún control UI tiene el foco (como el chat)
+	var focused_control = get_viewport().gui_get_focus_owner()
+	if focused_control != null:
 		return
 	
 	# Velocidad actual (sin usar Shift para velocidad, ahora Shift baja)
