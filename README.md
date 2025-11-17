@@ -11,59 +11,6 @@ https://aiciorg.github.io/AICI/
 
 (Funciona en navegador, requiere configurar tu API Key).
 
-## ⚙️ GitHub Pages & GitHub Actions (PARA EL PRÓXIMO EQUIPO)
-
-El repositorio incluye una configuración para desplegar automáticamente la versión web exportada de Godot en cada push a master.
-
-### 🔄 ¿Cómo funciona?
-
-Cada vez que se hace push a master:
-
-- 🚀 GitHub Actions exporta el proyecto Godot a HTML5.
-- 📤 Sube los archivos resultantes a la rama gh-pages.
-- 🌎 GitHub Pages sirve esa rama como sitio web.
-
-El workflow está en:  
-.github/workflows/deploy-static.yml
-
-### 🖥️ Godot Headless + Export Templates
-
-El workflow utiliza Godot 4.x headless para realizar la exportación sin interfaz.
-
-### 🔧 Cómo modificar el comportamiento del deploy
-
-#### 🔀 Cambiar la rama que dispara el deploy
-
-Editar en deploy-static.yml:
-
-```
-
-on:
-push:
-branches:
-- master
-
-```
-
-Por ejemplo:
-
-```
-
-on:
-push:
-branches:
-- main
-- develop
-- release
-
-```
-
-### 🐞 Problemas comunes con GitHub Pages
-
-- 🔧 Ir a Settings → Pages → Source = Deploy from branch → gh-pages
-- 📁 Confirmar que index.html existe en gh-pages
-- 📝 Revisar errores en Actions
-
 ---
 
 ## 🔑 Configuración Inicial (IMPORTANTE)
@@ -285,6 +232,61 @@ ui/          → interfaz
 addons/      → plugins
 
 ```
+
+### ⚙️ GitHub Pages & GitHub Actions
+
+El repositorio incluye una configuración para desplegar automáticamente la versión web exportada de Godot en cada push a master.
+
+#### 🔄 ¿Cómo funciona?
+
+Cada vez que se hace push a master:
+
+- 🚀 GitHub Actions exporta el proyecto Godot a HTML5.
+- 📤 Sube los archivos resultantes a la rama gh-pages.
+- 🌎 GitHub Pages sirve esa rama como sitio web.
+
+El workflow está en:  
+.github/workflows/deploy-static.yml
+
+#### 🖥️ Godot Headless + Export Templates
+
+El workflow utiliza Godot 4.x headless para realizar la exportación sin interfaz.
+
+#### 🔧 Cómo modificar el comportamiento del deploy
+
+##### 🔀 Cambiar la rama que dispara el deploy
+
+Editar en deploy-static.yml:
+
+```
+
+on:
+push:
+branches:
+- master
+
+```
+
+Por ejemplo:
+
+```
+
+on:
+push:
+branches:
+- main
+- develop
+- release
+
+```
+
+#### 🐞 Problemas comunes con GitHub Pages
+
+- 🔧 Ir a Settings → Pages → Source = Deploy from branch → gh-pages
+- 📁 Confirmar que index.html existe en gh-pages
+- 📝 Revisar errores en Actions
+
+---
 
 ### 🚧 Workflow recomendado
 
