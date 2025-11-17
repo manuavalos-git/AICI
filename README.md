@@ -120,15 +120,14 @@ Ver guía completa: API_KEY_SETUP.md
 | Subir | Espacio |
 | Bajar | Shift |
 | Activar/desactivar cámara | Ctrl |
+| Interactuar | E |
 
 ### 💬 Chat
 
 | Acción | Tecla |
 |-------|-------|
-| Minimizar/maximizar chat | T |
+| Activar chat para escribir | TAB |
 | Zoom del chat | Rueda del mouse |
-| Arrastrar chat 3D | Click + arrastrar |
-| Escribir mensaje | Click + teclado |
 
 Cuando el chat tiene foco → la cámara se desactiva.
 
@@ -174,6 +173,7 @@ La IA siempre ve tu pantalla.
 - Fresadora
 - Chiller
 - Llave
+- Panel de control
 
 (Se esperan más activos en futuras versiones.)
 
@@ -186,7 +186,8 @@ Definidos en asset_spawn_limits:
 "valvula": 1,
 "fresadora": 1,
 "chiller": 1,
-"llave": 5
+"llave": 5,
+"panel": 1
 
 ```
 
@@ -254,7 +255,7 @@ Internamente el sistema:
 
 - Mundo.gd → controlador principal
 - ChatUI.gd → interfaz del chat
-- CameraController.gd → cámara libre
+- player.gd → movimiento de cámara
 - AssetManager.gd → gestión de assets
 
 ### ⚙️ Configuración

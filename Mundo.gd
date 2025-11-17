@@ -49,6 +49,7 @@ var asset_spawn_limits = {
 	"fresadora": 1,
 	"chiller": 1,
 	"llave": 5,
+	"panel": 1
 }
 
 #  NUEVO: Posiciones y rotaciones fijas para assets específicos
@@ -65,6 +66,10 @@ var fixed_positions = {
 	"chiller": {
 		"position": Vector3(3.811, -1.755, -6.491),
 		"rotation": Vector3(0, 90, 0)
+	},
+	"panel": {
+		"position": Vector3(0, 0, 0),
+		"rotation": Vector3(0, 0, 0)
 	}
 }
 
