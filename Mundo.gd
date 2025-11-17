@@ -376,18 +376,14 @@ func _on_request_completed(result, response_code, headers, body):
 # Funciones para manejar el focus del chat
 func _on_line_edit_focus_entered():
 	# Desactivar controles de cámara cuando se enfoca el chat
-	if camera_controller:
-		camera_controller.movement_enabled = false
-		if camera_controller.has_method("update_status_label"):
-			camera_controller.update_status_label()
+	if camera_controller and camera_controller.has_method("disable_movement"):
+		camera_controller.call("disable_movement")
 	print("🔒 Chat enfocado - Movimiento de cámara BLOQUEADO")
 
 func _on_line_edit_focus_exited():
 	# Reactivar controles cuando se desenfoca el chat
-	if camera_controller:
-		camera_controller.movement_enabled = true
-		if camera_controller.has_method("update_status_label"):
-			camera_controller.update_status_label()
+	if camera_controller and camera_controller.has_method("enable_movement"):
+		camera_controller.call("enable_movement")
 	print("🔓 Chat desenfocado - Movimiento de cámara ACTIVADO")
 
 
