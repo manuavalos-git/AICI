@@ -32,13 +32,13 @@ jobs:
 
           REQUIRED_FILES=(
             "GodotAIv2.html"
-            "GodotAI.js"
-            "GodotAI.wasm"
-            "GodotAI.pck"
-            "GodotAI.png"
-            "GodotAI.icon.png"
-            "GodotAI.apple-touch-icon.png"
-            "GodotAI.audio.worklet.js"
+            "GodotAIv2.js"
+            "GodotAIv2.wasm"
+            "GodotAIv2.pck"
+            "GodotAIv2.png"
+            "GodotAIv2.icon.png"
+            "GodotAIv2.apple-touch-icon.png"
+            "GodotAIv2.audio.worklet.js"
           )
 
           ALL_PRESENT=true
@@ -77,7 +77,7 @@ jobs:
           mkdir -p deploy
 
           # Copy all Godot export files
-          cp GodotAI.* deploy/ 2>/dev/null || true
+          cp GodotAIv2.* deploy/ 2>/dev/null || true
 
           echo "Copied files to deploy directory:"
           ls -lh deploy/
@@ -203,9 +203,9 @@ jobs:
           echo ""
           echo "📦 Deployed Files:"
           echo "   ✅ GodotAIv2.html    - Entry point"
-          echo "   ✅ GodotAI.js      - Engine (~324KB)"
-          echo "   ✅ GodotAI.wasm    - Runtime (~34MB)"
-          echo "   ✅ GodotAI.pck     - Game data (~50MB)"
+          echo "   ✅ GodotAIv2.js      - Engine (~324KB)"
+          echo "   ✅ GodotAIv2.wasm    - Runtime (~34MB)"
+          echo "   ✅ GodotAIv2.pck     - Game data (~50MB)"
           echo "   ✅ Assets          - Icons, audio worklets"
           echo ""
           echo "🎮 Features Active:"
