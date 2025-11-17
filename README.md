@@ -318,6 +318,7 @@ branches:
 - Animaciones de funcionamiento real
 - Simulaciones de procesos industriales
 - Mejorar posicionamiento de assets con un algoritmo que los ubique en la mejor posición posible evitando colisiones entre sí
+- Integrar API de Speech-to-Text (hablarle al asistente).
 - Integrar API de Text-to-Speech (que el asistente responda con voz) 
 - Modo quiz / evaluación
 
