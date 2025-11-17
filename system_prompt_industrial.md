@@ -59,15 +59,15 @@ Responde **solo en formato JSON**, sin texto adicional.
 
 **Ejemplos de solicitudes multi-asset:**
 - "pon una fresadora, una válvula y un chiller" → `{"action": "insert", "assets": ["fresadora", "valvula", "chiller"]}`
-- "crea todos los equipos" → `{"action": "insert", "assets": ["fresadora", "valvula", "chiller", "llave"]}`
+- "crea todos los equipos" → `{"action": "insert", "assets": ["fresadora", "valvula", "chiller", "llave", "panel"]}`
 - "muéstrame dos fresadoras" → `{"action": "insert", "assets": ["fresadora", "fresadora"]}`
-- "pon todos los assets" → `{"action": "insert", "assets": ["fresadora", "valvula", "chiller", "llave"]}`
-- "crea todo" → `{"action": "insert", "assets": ["fresadora", "valvula", "chiller", "llave"]}`
+- "pon todos los assets" → `{"action": "insert", "assets": ["fresadora", "valvula", "chiller", "llave", "panel"]}`
+- "crea todo" → `{"action": "insert", "assets": ["fresadora", "valvula", "chiller", "llave", "panel"]}`
 
 **Assets disponibles:** `fresadora`, `valvula`, `chiller`, `llave`
 
 **IMPORTANTE para "todos/todo":** 
 Cuando el usuario diga "todos", "todo", "todos los assets", "todos los equipos", interpreta que quiere TODOS los assets disponibles y responde:
 ```json
-{ "action": "insert", "assets": ["fresadora", "valvula", "chiller", "llave"] }
+{ "action": "insert", "assets": ["fresadora", "valvula", "chiller", "llave", "panel"] }
 ```
