@@ -31,7 +31,7 @@ jobs:
           echo ""
 
           REQUIRED_FILES=(
-            "GodotAI.html"
+            "GodotAIv2.html"
             "GodotAI.js"
             "GodotAI.wasm"
             "GodotAI.pck"
@@ -94,9 +94,9 @@ jobs:
             <meta name="description" content="Plataforma 3D interactiva para gestión industrial con inteligencia artificial">
             <script>
               // Redirección instantánea
-              window.location.replace('GodotAI.html');
+              window.location.replace('GodotAIv2.html');
             </script>
-            <meta http-equiv="refresh" content="0; url=GodotAI.html">
+            <meta http-equiv="refresh" content="0; url=GodotAIv2.html">
             <style>
               body { 
                 margin: 0; 
@@ -135,7 +135,7 @@ jobs:
           </head>
           <body>
             <div class="loader"></div>
-            <p>Cargando 3DAIRE... <a href="GodotAI.html">Haz clic aquí si no se redirige</a></p>
+            <p>Cargando 3DAIRE... <a href="GodotAIv2.html">Haz clic aquí si no se redirige</a></p>
           </body>
           </html>
           EOF
@@ -199,10 +199,10 @@ jobs:
           echo ""
           echo "🌐 Live Site:"
           echo "   📍 Main: https://aiciorg.github.io/AICI/"
-          echo "   📍 Direct: https://aiciorg.github.io/AICI/GodotAI.html"
+          echo "   📍 Direct: https://aiciorg.github.io/AICI/GodotAIv2.html"
           echo ""
           echo "📦 Deployed Files:"
-          echo "   ✅ GodotAI.html    - Entry point"
+          echo "   ✅ GodotAIv2.html    - Entry point"
           echo "   ✅ GodotAI.js      - Engine (~324KB)"
           echo "   ✅ GodotAI.wasm    - Runtime (~34MB)"
           echo "   ✅ GodotAI.pck     - Game data (~50MB)"

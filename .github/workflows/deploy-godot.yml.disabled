@@ -62,7 +62,7 @@ jobs:
         run: |
           mkdir -p build/web
           echo "=== Starting Web export ==="
-          godot --headless --export-release "Web" build/web/GodotAI.html --verbose
+          godot --headless --export-release "Web" build/web/GodotAIv2.html --verbose
           echo "=== Export completed ==="
 
       - name: 📊 Verify Export Output
@@ -71,7 +71,7 @@ jobs:
           ls -lh build/web/
           echo ""
           echo "=== Verifying all required files ==="
-          for file in GodotAI.html GodotAI.js GodotAI.wasm GodotAI.pck GodotAI.png GodotAI.icon.png GodotAI.apple-touch-icon.png GodotAI.audio.worklet.js; do
+          for file in GodotAIv2.html GodotAI.js GodotAI.wasm GodotAI.pck GodotAI.png GodotAI.icon.png GodotAI.apple-touch-icon.png GodotAI.audio.worklet.js; do
             if [ -f "build/web/$file" ]; then
               echo "✅ $file - $(du -h build/web/$file | cut -f1)"
             else
@@ -94,9 +94,9 @@ jobs:
             <title>3DAIRE - Industrial AI Assistant</title>
             <script>
               // Instant redirect - no flash
-              window.location.replace('GodotAI.html');
+              window.location.replace('GodotAIv2.html');
             </script>
-            <meta http-equiv="refresh" content="0; url=GodotAI.html">
+            <meta http-equiv="refresh" content="0; url=GodotAIv2.html">
             <style>
               body { 
                 margin: 0; 
@@ -112,7 +112,7 @@ jobs:
             </style>
           </head>
           <body>
-            <p>Loading 3DAIRE... <a href="GodotAI.html" style="color: #4a9eff;">Click here if not redirected</a></p>
+            <p>Loading 3DAIRE... <a href="GodotAIv2.html" style="color: #4a9eff;">Click here if not redirected</a></p>
           </body>
           </html>
           EOF
@@ -146,10 +146,10 @@ jobs:
           echo ""
           echo "🌐 Live Site:"
           echo "   • Main: ${{ steps.deployment.outputs.page_url }}"
-          echo "   • Direct: ${{ steps.deployment.outputs.page_url }}GodotAI.html"
+          echo "   • Direct: ${{ steps.deployment.outputs.page_url }}GodotAIv2.html"
           echo ""
           echo "📦 Generated Files:"
-          echo "   • GodotAI.html (Main entry point)"
+          echo "   • GodotAIv2.html (Main entry point)"
           echo "   • GodotAI.js (Engine ~324KB)"
           echo "   • GodotAI.wasm (Runtime ~34MB)"
           echo "   • GodotAI.pck (Assets ~50MB)"
