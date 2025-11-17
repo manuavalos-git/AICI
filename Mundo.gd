@@ -95,9 +95,9 @@ func _ready():
 	# Mensaje de bienvenida
 	show_welcome_message()
 
-# 🔑 Cargar API key desde localStorage (web) o variable de entorno (desktop)
+# 🔑 Cargar API key desde localStorage (solo web)
 func load_api_key():
-	# Prioridad 1: Intentar cargar desde localStorage (web)
+	# Intentar cargar desde localStorage
 	if OS.has_feature("web"):
 		var js_code = "localStorage.getItem('openai_api_key') || ''"
 		api_key = JavaScriptBridge.eval(js_code)
@@ -107,14 +107,7 @@ func load_api_key():
 		else:
 			print("⚠️ No hay API key en localStorage")
 	else:
-		# Prioridad 2: Variable de entorno (desktop)
-		var env_key = OS.get_environment("OPENAI_API_KEY")
-		if env_key != "":
-			api_key = env_key
-			api_key_configured = true
-			print("🔑 API key cargada desde variable de entorno")
-		else:
-			print("⚠️ No hay API key en variable de entorno")
+		print("⚠️ No hay API key configurada (modo desktop requiere /setkey)")
 
 # 💾 Guardar API key en localStorage (solo web)
 func save_api_key(key: String):
@@ -122,6 +115,8 @@ func save_api_key(key: String):
 		var js_code = "localStorage.setItem('openai_api_key', '" + key + "')"
 		JavaScriptBridge.eval(js_code)
 		print("💾 API key guardada en localStorage")
+	else:
+		print("💾 API key guardada en memoria (solo sesión actual)")
 	api_key = key
 	api_key_configured = true
 
