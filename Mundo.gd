@@ -85,8 +85,8 @@ func _ready():
 	line_edit.text_submitted.connect(_on_text_submitted)
 
 	# Conectar señales de focus del LineEdit
-	line_edit.focus_entered.connect(_on_line_edit_focus_entered)
-	line_edit.focus_exited.connect(_on_line_edit_focus_exited)
+	line_edit.focus_entered.connect(_on_line_edit_focus_exited)
+	line_edit.focus_exited.connect(_on_line_edit_focus_entered)
 
 	# 2. ¡CONEXIÓN OPENAI!
 	# Conectamos la señal de "request_completed" del nodo HTTPRequest
@@ -454,10 +454,16 @@ func _input(event):
 	if event.is_action_pressed("ui_focus_next"):
 		if line_edit.has_focus():
 			line_edit.release_focus()
-			print("Chat desenfocado")
+			# 🔓 Reactivar FREE CAM cuando se desenfoca el chat
+			if camera_controller and camera_controller.has_method("enable_movement"):
+				camera_controller.enable_movement()
+			print("Chat desenfocado - FREE CAM ACTIVADA")
 		else:
 			line_edit.grab_focus()
-			print("Chat enfocado")
+			# 🔒 Desactivar FREE CAM cuando se enfoca el chat
+			if camera_controller and camera_controller.has_method("disable_movement"):
+				camera_controller.disable_movement()
+			print("Chat enfocado - FREE CAM DESACTIVADA")
 		get_viewport().set_input_as_handled()
 	elif line_edit.has_focus():
 		sub_viewport_node.push_input(event)
