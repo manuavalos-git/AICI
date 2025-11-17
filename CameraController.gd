@@ -14,14 +14,6 @@ var movement_enabled = true
 # Referencia al label 3D
 @onready var status_label = get_node_or_null("../StatusLabel3D")
 
-# 🔒 Función helper para verificar si el chat tiene el foco
-func is_chat_focused() -> bool:
-	var focused = get_viewport().gui_get_focus_owner()
-	if focused != null:
-		# Verificar si es un LineEdit o cualquier control de texto
-		return focused is LineEdit or focused is TextEdit or focused is CodeEdit
-	return false
-
 func _ready():
 	# Capturar el mouse al iniciar
 	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
@@ -36,13 +28,6 @@ func update_status_label():
 		else:
 			status_label.text = "🎮 FREE CAM: DESACTIVADA\nCTRL para activar | T: Minimizar/Maximizar chat\n💬 CHAT: Click + Arrastra en 3D | Rueda: Zoom | Click en texto para escribir | C para activar el chat"
 			status_label.modulate = Color.RED
-
-func _unhandled_input(event):
-	# 🔒 Este método se ejecuta DESPUÉS de que la UI procese el input
-	# Si el chat tiene el foco, consumir el evento para que no llegue aquí
-	if is_chat_focused():
-		get_viewport().set_input_as_handled()
-		return
 
 func _input(event):
 	# Alternar habilitación de movimiento con 'C' (o tu tecla preferida)
@@ -67,10 +52,6 @@ func _input(event):
 			Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 			mouse_captured = true
 	
-	# 🔒 Si el chat tiene el foco, no procesar ningún input de cámara
-	if is_chat_focused():
-		return
-	
 	# Rotación con movimiento del mouse (solo si el movimiento está habilitado)
 	if event is InputEventMouseMotion and mouse_captured and movement_enabled:
 		rotate_y(deg_to_rad(-event.relative.x * sensitivity))
@@ -80,12 +61,8 @@ func _input(event):
 		rotation.x = clamp(rotation.x, deg_to_rad(-89), deg_to_rad(89))
 
 func _process(delta):
-	# No mover si los controles están deshabilitados
+	# No mover si los controles están deshabilitados o si el movimiento está bloqueado
 	if not mouse_captured or not movement_enabled:
-		return
-	
-	# 🔒 No mover si el chat tiene el foco
-	if is_chat_focused():
 		return
 	
 	# Velocidad actual (sin usar Shift para velocidad, ahora Shift baja)
